@@ -24,7 +24,7 @@ async def websocket_endpoint(ws: WebSocket):
             state = "ON" if data.get("pressed") else "OFF"
 
             if cmd == "estop":
-                print(f"🔴 E-STOP ACTIVADO")
+                print(f"🔴 E-STOP | {state}")
             else:
                 print(f"🎮 {cmd.upper():>8} | {direction:>3} | {state}")
 

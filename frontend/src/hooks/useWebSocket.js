@@ -7,23 +7,31 @@ export function useWebSocket() {
   const wsRef = useRef(null)
   const [connected, setConnected] = useState(false)
 
-  const connect = useCallback(() => {
-    const ws = new WebSocket(WS_URL)
-
-    ws.onopen = () => setConnected(true)
-    ws.onclose = () => {
-      setConnected(false)
-      setTimeout(connect, RECONNECT_MS)
-    }
-    ws.onerror = () => ws.close()
-
-    wsRef.current = ws
-  }, [])
-
   useEffect(() => {
+    let reconnectTimer = null
+
+    function connect() {
+      const ws = new WebSocket(WS_URL)
+
+      ws.onopen = () => setConnected(true)
+      ws.onclose = () => {
+        setConnected(false)
+        reconnectTimer = window.setTimeout(connect, RECONNECT_MS)
+      }
+      ws.onerror = () => ws.close()
+
+      wsRef.current = ws
+    }
+
     connect()
-    return () => wsRef.current?.close()
-  }, [connect])
+
+    return () => {
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer)
+      }
+      wsRef.current?.close()
+    }
+  }, [])
 
   const send = useCallback((data) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {

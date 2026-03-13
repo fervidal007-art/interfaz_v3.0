@@ -1,15 +1,17 @@
 import { useTouch } from '@/hooks/useTouch'
 import { cn } from '@/lib/utils'
 
-function RotateButton({ direction, onPress, onRelease }) {
-  const { isPressed, ref } = useTouch({ onPress, onRelease })
+function RotateButton({ direction, onPress, onRelease, disabled = false }) {
+  const { isPressed, ref } = useTouch({ onPress, onRelease, disabled })
   const isCW = direction === 'cw'
 
   return (
     <button
       ref={ref}
+      disabled={disabled}
       className={cn(
         'rounded-2xl border border-border/50 bg-card shadow-sm flex items-center justify-center transition-all duration-75 select-none text-muted-foreground hover:bg-muted/50',
+        disabled && 'pointer-events-none opacity-40',
         isPressed && 'bg-[#122A5E]/10 text-[#122A5E] shadow-[0_0_12px_rgba(18,42,94,0.25)] scale-95 border-[#122A5E]/30'
       )}
       style={{
@@ -35,7 +37,7 @@ function RotateButton({ direction, onPress, onRelease }) {
   )
 }
 
-export function RotationControl({ onRotate }) {
+export function RotationControl({ onRotate, disabled = false }) {
   return (
     <div
       className="flex items-center"
@@ -45,11 +47,13 @@ export function RotationControl({ onRotate }) {
         direction="ccw"
         onPress={() => onRotate?.('ccw', true)}
         onRelease={() => onRotate?.('ccw', false)}
+        disabled={disabled}
       />
       <RotateButton
         direction="cw"
         onPress={() => onRotate?.('cw', true)}
         onRelease={() => onRotate?.('cw', false)}
+        disabled={disabled}
       />
     </div>
   )

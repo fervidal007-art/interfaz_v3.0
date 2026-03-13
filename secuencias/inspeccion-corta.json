@@ -1,0 +1,11 @@
+{
+  "id": "inspeccion-corta",
+  "name": "Inspeccion corta",
+  "steps": [
+    { "type": "direction", "value": "ne", "durationMs": 900 },
+    { "type": "direction", "value": "n", "durationMs": 1200 },
+    { "type": "rotate", "value": "ccw", "durationMs": 800 },
+    { "type": "estop", "durationMs": 1200 },
+    { "type": "direction", "value": "sw", "durationMs": 950 }
+  ]
+}

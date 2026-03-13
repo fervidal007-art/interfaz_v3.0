@@ -1,16 +1,17 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 
-export function useTouch({ onPress, onRelease } = {}) {
+export function useTouch({ onPress, onRelease, disabled = false } = {}) {
   const [isPressed, setIsPressed] = useState(false)
   const pressedRef = useRef(false)
   const elRef = useRef(null)
 
   const press = useCallback(() => {
+    if (disabled) return
     if (pressedRef.current) return
     pressedRef.current = true
     setIsPressed(true)
     onPress?.()
-  }, [onPress])
+  }, [disabled, onPress])
 
   const release = useCallback(() => {
     if (!pressedRef.current) return
@@ -24,6 +25,7 @@ export function useTouch({ onPress, onRelease } = {}) {
     if (!el) return
 
     const onTouchStart = (e) => {
+      if (disabled) return
       e.preventDefault()
       press()
     }
@@ -48,6 +50,7 @@ export function useTouch({ onPress, onRelease } = {}) {
 
     // pointer events for desktop/mouse testing
     const onPointerDown = (e) => {
+      if (disabled) return
       if (e.pointerType === 'touch') return // handled by touch events
       e.preventDefault()
       el.setPointerCapture(e.pointerId)
@@ -77,7 +80,7 @@ export function useTouch({ onPress, onRelease } = {}) {
       el.removeEventListener('pointerup', onPointerUp)
       el.removeEventListener('pointercancel', onPointerUp)
     }
-  }, [press, release])
+  }, [disabled, press, release])
 
   // ref callback to attach to the button element
   const refCallback = useCallback((node) => {
