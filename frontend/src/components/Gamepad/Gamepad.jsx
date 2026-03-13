@@ -39,6 +39,7 @@ export function Gamepad({ send }) {
   const [durationInput, setDurationInput] = useState('1200')
   const [isPlaying, setIsPlaying] = useState(false)
   const [activeStepIndex, setActiveStepIndex] = useState(null)
+  const [isCenterPanelExpanded, setIsCenterPanelExpanded] = useState(false)
   const timeoutRef = useRef(null)
   const activeStepRef = useRef(null)
 
@@ -163,6 +164,7 @@ export function Gamepad({ send }) {
     }
 
     setMode(nextMode)
+    setIsCenterPanelExpanded(nextMode === 'sequence')
   }
 
   return (
@@ -170,19 +172,28 @@ export function Gamepad({ send }) {
       className="flex-1 flex flex-col touch-none select-none overflow-hidden"
       style={{
         '--btn-size': 'clamp(48px, min(14vw, 12vh), 110px)',
+        '--center-panel-width': 'min(100%, clamp(250px, 34vw, 520px))',
       }}
     >
-      <div className="flex-1 grid grid-cols-1 items-center gap-5 px-[3vw] py-[2vh] lg:grid-cols-[auto_minmax(0,1fr)_auto]">
+      <div
+        className="flex-1 min-h-0 grid items-center px-[3vw] py-[1.8vh]"
+        style={{
+          gridTemplateColumns: 'auto minmax(0, 1fr) auto',
+          columnGap: 'clamp(12px, 2vw, 26px)',
+        }}
+      >
         {/* Left: D-Pad */}
-        <div className="justify-self-center lg:justify-self-start">
+        <div className="justify-self-start">
           <DPad onDirection={handleDirection} disabled={controlsLocked} />
         </div>
 
         {/* Center: Manual / Sequence */}
-        <div className="min-w-0">
+        <div className="min-w-0 flex justify-center px-[1vw]">
           <CenterPanel
             mode={mode}
             onModeChange={handleModeChange}
+            expanded={isCenterPanelExpanded}
+            onToggleExpanded={() => setIsCenterPanelExpanded((current) => !current)}
             profiles={sequenceProfiles}
             selectedProfileId={selectedProfileId}
             onSelectProfile={setSelectedProfileId}
@@ -204,7 +215,7 @@ export function Gamepad({ send }) {
         </div>
 
         {/* Right: Rotation */}
-        <div className="justify-self-center lg:justify-self-end">
+        <div className="justify-self-end">
           <RotationControl onRotate={handleRotate} disabled={controlsLocked} />
         </div>
       </div>
