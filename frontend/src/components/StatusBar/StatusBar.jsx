@@ -21,7 +21,7 @@ function FullscreenIcon({ isFullscreen }) {
   )
 }
 
-export function StatusBar() {
+export function StatusBar({ connected }) {
   const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement)
 
   useEffect(() => {
@@ -47,9 +47,9 @@ export function StatusBar() {
             Robot <span className="font-light text-primary/70">Control</span>
           </h1>
           <div className="flex items-center gap-1.5 mt-1">
-            <span className="w-2 h-2 rounded-full bg-muted-foreground/30 ring-2 ring-muted-foreground/10" />
+            <span className={`w-2 h-2 rounded-full ring-2 ${connected ? 'bg-green-500 ring-green-500/20' : 'bg-muted-foreground/30 ring-muted-foreground/10'}`} />
             <span className="text-[11px] text-muted-foreground font-medium tracking-wide uppercase">
-              Desconectado
+              {connected ? 'Conectado' : 'Desconectado'}
             </span>
           </div>
         </div>

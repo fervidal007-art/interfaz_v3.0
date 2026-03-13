@@ -23,17 +23,17 @@ function EStopButton({ onPress, onRelease }) {
   )
 }
 
-export function Gamepad() {
-  const handleDirection = (dir, pressed) => {
-    console.log('Direction:', dir, pressed ? 'ON' : 'OFF')
+export function Gamepad({ send }) {
+  const handleDirection = (direction, pressed) => {
+    send({ type: 'direction', direction, pressed })
   }
 
-  const handleRotate = (dir, pressed) => {
-    console.log('Rotate:', dir, pressed ? 'ON' : 'OFF')
+  const handleRotate = (direction, pressed) => {
+    send({ type: 'rotate', direction, pressed })
   }
 
   const handleEStop = () => {
-    console.log('E-STOP ACTIVATED')
+    send({ type: 'estop', pressed: true })
   }
 
   return (
