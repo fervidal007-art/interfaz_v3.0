@@ -1,0 +1,9 @@
+{
+  "name": "interfaz-backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'TODO: configure backend dev server'",
+    "start": "echo 'TODO: configure backend start'"
+  }
+}
