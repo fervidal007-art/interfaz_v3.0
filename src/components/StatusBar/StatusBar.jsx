@@ -39,7 +39,7 @@ export function StatusBar() {
   }, [])
 
   return (
-    <header className="flex items-center justify-between px-5 py-3.5 bg-white border-b border-border/50 shadow-[0_1px_6px_rgba(0,0,0,0.04)]">
+    <header className="flex items-center justify-between px-5 h-14 bg-white border-b border-border/50 shadow-[0_1px_6px_rgba(0,0,0,0.04)]">
       {/* Left: Title + Status */}
       <div className="flex items-center gap-3">
         <div className="flex flex-col">
@@ -63,17 +63,17 @@ export function StatusBar() {
       </div>
 
       {/* Right: Logos */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 h-full py-2">
         <img
           src="/logo-iteso.png"
           alt="ITESO, Universidad Jesuita de Guadalajara"
-          className="h-9 w-auto object-contain"
+          className="h-full w-auto object-contain"
         />
         <div className="w-px h-8 bg-border/60" />
         <img
           src="/logo-epics.png"
           alt="EPICS in IEEE"
-          className="h-10 w-auto object-contain"
+          className="h-full w-auto object-contain scale-125"
         />
       </div>
     </header>

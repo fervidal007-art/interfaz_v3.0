@@ -43,12 +43,16 @@ export function Gamepad() {
         '--btn-size': 'clamp(48px, min(14vw, 12vh), 110px)',
       }}
     >
-      <div className="flex-1 grid grid-cols-2 items-center justify-items-center px-[3vw]">
+      <div className="flex-1 grid grid-cols-2 items-center px-[3vw]">
         {/* Left: D-Pad */}
-        <DPad onDirection={handleDirection} />
+        <div className="justify-self-start">
+          <DPad onDirection={handleDirection} />
+        </div>
 
         {/* Right: Rotation */}
-        <RotationControl onRotate={handleRotate} />
+        <div className="justify-self-end">
+          <RotationControl onRotate={handleRotate} />
+        </div>
       </div>
 
       {/* E-Stop */}
