@@ -333,7 +333,7 @@ export function Gamepad({ send }) {
             onDurationInputChange={setDurationInput}
             onAddEstopStep={handleAddEstopStep}
             draftSteps={draftSteps}
-            onReorderSteps={handleReorderSteps}
+            onReorderSteps={handleMoveStep}
             onRemoveStep={handleRemoveStep}
             onChangeDuration={handleChangeDuration}
             isPlaying={isPlaying}

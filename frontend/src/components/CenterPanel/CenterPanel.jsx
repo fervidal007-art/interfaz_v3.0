@@ -252,7 +252,7 @@ function SequenceEditor({
   editName, onEditNameChange,
   onCreateProfile, onDeleteProfile, onClearDraft,
   durationInput, onDurationInputChange, onAddEstopStep,
-  draftSteps, onMoveStep, onRemoveStep, onChangeDuration,
+  draftSteps, onReorderSteps, onRemoveStep, onChangeDuration,
   isPlaying, activeStepIndex, onPlay, onStop,
   maxSteps,
 }) {
