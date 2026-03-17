@@ -217,25 +217,25 @@ function StepRow({ step, index, isCurrent, canMoveUp, canMoveDown, onMove, onRem
       </div>
 
       {!readOnly && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div style={{ display: 'flex', flexDirection: 'row', gap: 2, flexShrink: 0 }}>
           <button type="button" onClick={() => onMove(index, -1)} disabled={disabled || !canMoveUp} style={{
             borderRadius: S.rSm, border: '1px solid oklch(0.88 0.01 250)',
             background: 'white', color: 'oklch(0.50 0.02 250)',
-            padding: '1px 6px', fontSize: 11, fontWeight: 700, lineHeight: 1.4,
+            padding: '2px 7px', fontSize: 11, fontWeight: 700, lineHeight: 1.4,
             cursor: (disabled || !canMoveUp) ? 'not-allowed' : 'pointer',
             opacity: (disabled || !canMoveUp) ? 0.25 : 1,
           }}>↑</button>
           <button type="button" onClick={() => onMove(index, 1)} disabled={disabled || !canMoveDown} style={{
             borderRadius: S.rSm, border: '1px solid oklch(0.88 0.01 250)',
             background: 'white', color: 'oklch(0.50 0.02 250)',
-            padding: '1px 6px', fontSize: 11, fontWeight: 700, lineHeight: 1.4,
+            padding: '2px 7px', fontSize: 11, fontWeight: 700, lineHeight: 1.4,
             cursor: (disabled || !canMoveDown) ? 'not-allowed' : 'pointer',
             opacity: (disabled || !canMoveDown) ? 0.25 : 1,
           }}>↓</button>
           <button type="button" onClick={() => onRemove(index)} disabled={disabled} style={{
             borderRadius: S.rSm, border: '1px solid oklch(0.55 0.24 25 / 0.25)',
             background: 'oklch(0.55 0.24 25 / 0.06)', color: 'oklch(0.55 0.24 25)',
-            padding: '1px 6px', fontSize: 11, fontWeight: 700, lineHeight: 1.4,
+            padding: '2px 7px', fontSize: 11, fontWeight: 700, lineHeight: 1.4,
             cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.35 : 1,
           }}>×</button>
         </div>
