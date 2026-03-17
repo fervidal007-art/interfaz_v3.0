@@ -620,7 +620,7 @@ export function CenterPanel({
   return (
     <section style={{
       width: 'var(--center-panel-width)',
-      maxHeight: 'min(100%, calc(100dvh - var(--btn-size) * 2.5 - 5.5rem))',
+      maxHeight: '100%',
       overflowY: 'auto', overflowX: 'hidden',
       borderRadius: 'clamp(16px, 2.8vh, 28px)',
       border: '1px solid oklch(0.90 0.01 250)',
