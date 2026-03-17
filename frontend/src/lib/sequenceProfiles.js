@@ -32,48 +32,6 @@ const VALID_DIRECTIONS = new Set(DIRECTION_ACTIONS.map((action) => action.value)
 const VALID_ROTATIONS = new Set(ROTATION_ACTIONS.map((action) => action.value))
 const ACTIONS_BY_KEY = new Map(SEQUENCE_ACTIONS.map((action) => [action.key, action]))
 
-const rawProfiles = import.meta.glob('../../../secuencias/*.json', {
-  eager: true,
-  import: 'default',
-})
-
-function normalizeStep(step) {
-  if (!step || typeof step !== 'object') return null
-
-  const durationMs = Number(step.durationMs)
-  if (!Number.isFinite(durationMs) || durationMs <= 0) return null
-
-  if (step.type === 'direction' && VALID_DIRECTIONS.has(step.value)) {
-    return { type: 'direction', value: step.value, durationMs: Math.round(durationMs) }
-  }
-
-  if (step.type === 'rotate' && VALID_ROTATIONS.has(step.value)) {
-    return { type: 'rotate', value: step.value, durationMs: Math.round(durationMs) }
-  }
-
-  if (step.type === 'estop') {
-    return { type: 'estop', durationMs: Math.round(durationMs) }
-  }
-
-  return null
-}
-
-function normalizeProfile(pathname, profile, index) {
-  const fallbackId = pathname.split('/').pop()?.replace(/\.json$/i, '') || `secuencia-${index + 1}`
-  const steps = Array.isArray(profile?.steps) ? profile.steps.map(normalizeStep).filter(Boolean) : []
-
-  return {
-    id: typeof profile?.id === 'string' && profile.id.trim() ? profile.id.trim() : fallbackId,
-    name: typeof profile?.name === 'string' && profile.name.trim() ? profile.name.trim() : fallbackId,
-    steps,
-  }
-}
-
-export function getSequenceProfiles() {
-  return Object.entries(rawProfiles)
-    .map(([pathname, profile], index) => normalizeProfile(pathname, profile, index))
-    .sort((left, right) => left.name.localeCompare(right.name, 'es'))
-}
 
 export function cloneSequenceSteps(steps = []) {
   return steps.map((step) => (step.type === 'estop'

@@ -1,96 +1,64 @@
-import { cn } from '@/lib/utils'
-import {
-  SEQUENCE_ACTIONS,
-  formatDuration,
-  getActionForStep,
-} from '@/lib/sequenceProfiles'
+import { useEffect, useRef, useState } from 'react'
+import { getActionForStep, formatDuration } from '@/lib/sequenceProfiles'
 
-function ArrowGlyph({ rotation = 0, className = 'w-4 h-4' }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ transform: `rotate(${rotation}deg)` }}
-    >
-      <path d="M12 5l0 14" />
-      <path d="M5 12l7-7 7 7" />
-    </svg>
-  )
+const S = {
+  gap:     'clamp(4px, 1.2vh, 12px)',
+  gapSm:   'clamp(3px, 0.8vh, 8px)',
+  pad:     'clamp(6px, 1.4vh, 14px)',
+  padSm:   'clamp(4px, 1vh, 10px)',
+  fs:      'clamp(11px, 1.5vh, 14px)',
+  fsXs:    'clamp(9px, 1.2vh, 12px)',
+  fsLabel: 'clamp(8px, 1vh, 11px)',
+  r:       'clamp(12px, 2vh, 18px)',
+  rSm:     'clamp(8px, 1.4vh, 12px)',
+  icon:    'clamp(24px, 3.8vh, 34px)',
 }
 
-function RotateGlyph({ clockwise, className = 'w-4 h-4' }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ transform: clockwise ? 'none' : 'scaleX(-1)' }}
-    >
-      <path d="M21 12a9 9 0 1 1-3-6.7" />
-      <path d="M21 3v5.5h-5.5" />
-    </svg>
-  )
-}
+// ─── Glyphs ───────────────────────────────────────────────────────────────────
 
-function ActionGlyph({ action, className }) {
-  if (action.type === 'direction') {
-    return <ArrowGlyph rotation={action.rotation} className={className} />
+function StepGlyph({ step }) {
+  const action = getActionForStep(step)
+  if (!action) return <span style={{ fontSize: 12, fontWeight: 900 }}>?</span>
+  if (step.type === 'estop') {
+    return <span style={{ fontSize: 13, fontWeight: 900, color: 'oklch(0.55 0.24 25)' }}>!</span>
   }
-
-  if (action.type === 'rotate') {
-    return <RotateGlyph clockwise={action.value === 'cw'} className={className} />
+  if (step.type === 'rotate') {
+    return (
+      <svg width={14} height={14} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"
+        style={{ transform: step.value === 'cw' ? 'none' : 'scaleX(-1)', flexShrink: 0 }}>
+        <path d="M21 12a9 9 0 1 1-3-6.7" /><path d="M21 3v5.5h-5.5" />
+      </svg>
+    )
   }
-
-  return <span className={cn('font-black tracking-[0.2em]', className)}>!</span>
-}
-
-function ChevronGlyph({ expanded }) {
   return (
-    <svg
-      className={cn('h-4 w-4 transition-transform duration-150', expanded && 'rotate-180')}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m6 9 6 6 6-6" />
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round"
+      style={{ transform: `rotate(${action.rotation ?? 0}deg)`, flexShrink: 0 }}>
+      <path d="M12 5l0 14" /><path d="M5 12l7-7 7 7" />
     </svg>
   )
 }
 
-function ModeSwitch({ mode, onChange, disabled }) {
-  const items = [
-    { id: 'manual', label: 'Manual' },
-    { id: 'sequence', label: 'Secuencia' },
-  ]
+// ─── Mode switch ──────────────────────────────────────────────────────────────
 
+function ModeSwitch({ mode, onChange }) {
   return (
-    <div className="grid grid-cols-2 rounded-2xl bg-muted/60 p-1">
-      {items.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          onClick={() => onChange(item.id)}
-          disabled={disabled}
-          className={cn(
-            'rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-150',
-            item.id === mode
-              ? 'bg-card text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground',
-            disabled && 'pointer-events-none opacity-60'
-          )}
-        >
+    <div style={{
+      display: 'grid', gridTemplateColumns: '1fr 1fr',
+      borderRadius: S.r, background: 'oklch(0.93 0.01 250)',
+      padding: '3px', gap: '3px',
+    }}>
+      {[{ id: 'manual', label: 'Manual' }, { id: 'sequence', label: 'Secuencia' }].map((item) => (
+        <button key={item.id} type="button" onClick={() => onChange(item.id)} style={{
+          borderRadius: `calc(${S.r} - 3px)`,
+          padding: `${S.padSm} ${S.pad}`,
+          fontSize: S.fs, fontWeight: 600, border: 'none', cursor: 'pointer',
+          transition: 'all 150ms',
+          background: item.id === mode ? 'white' : 'transparent',
+          color: item.id === mode ? 'oklch(0.15 0.02 250)' : 'oklch(0.50 0.02 250)',
+          boxShadow: item.id === mode ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
+        }}>
           {item.label}
         </button>
       ))}
@@ -98,400 +66,553 @@ function ModeSwitch({ mode, onChange, disabled }) {
   )
 }
 
-function ManualOverview({ sequenceCount }) {
+// ─── Profile dropdown ─────────────────────────────────────────────────────────
+
+function ProfileDropdown({ profiles, selectedId, onSelect, disabled }) {
+  const [open, setOpen] = useState(false)
+  const selected = profiles.find((p) => p.id === selectedId) ?? null
+
   return (
-    <div className="space-y-3">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary/60">
-          Centro
-        </p>
-        <h2 className="mt-1.5 text-xl font-semibold tracking-tight text-foreground">
-          Control directo activo
-        </h2>
-        <p className="mt-1.5 max-w-xl text-sm leading-5 text-muted-foreground">
-          Usa el pad lateral para maniobrar el robot. Cuando quieras automatizar un recorrido, cambia a
-          <span className="font-medium text-foreground"> Secuencia </span>
-          y arma los pasos desde este panel sin salirte del flujo actual.
-        </p>
-      </div>
+    <>
+      {open && (
+        <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 50 }} />
+      )}
+      <div style={{ position: 'relative', zIndex: 51, flex: 1, minWidth: 0 }}>
+        <button
+          type="button"
+          onClick={() => !disabled && setOpen((v) => !v)}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            width: '100%', gap: S.gapSm,
+            borderRadius: S.r, border: '1px solid oklch(0.88 0.01 250)',
+            background: 'white', padding: `${S.padSm} ${S.pad}`,
+            fontSize: S.fs, fontWeight: 500, color: 'oklch(0.20 0.02 250)',
+            cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1,
+            textAlign: 'left',
+          }}
+        >
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {selected?.name ?? '—'}
+          </span>
+          <svg width={12} height={12} viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 150ms', flexShrink: 0 }}>
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
 
-      <div className="grid gap-2 sm:grid-cols-2">
-        <div className="rounded-2xl border border-border/70 bg-card/80 p-3 shadow-sm">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Modo actual</p>
-          <p className="mt-1.5 text-base font-semibold text-foreground">Manual</p>
-          <p className="mt-1 text-sm text-muted-foreground">Respuesta inmediata desde los controles laterales.</p>
-        </div>
-        <div className="rounded-2xl border border-border/70 bg-card/80 p-3 shadow-sm">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Perfiles cargados</p>
-          <p className="mt-1.5 text-base font-semibold text-foreground">{sequenceCount}</p>
-          <p className="mt-1 text-sm text-muted-foreground">Secuencias listas para usar como base de trabajo.</p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function ActionSelector({ selectedActionKey, onSelectAction, disabled }) {
-  return (
-    <div className="grid grid-cols-3 gap-2.5">
-      {SEQUENCE_ACTIONS.map((action) => {
-        const isSelected = action.key === selectedActionKey
-        const isEstop = action.type === 'estop'
-
-        return (
-          <button
-            key={action.key}
-            type="button"
-            onClick={() => onSelectAction(action.key)}
-            disabled={disabled}
-            className={cn(
-              'rounded-2xl border px-3 py-3 text-left transition-all duration-150',
-              isEstop
-                ? 'border-destructive/20 bg-destructive/5 text-destructive'
-                : 'border-border/70 bg-card/80 text-foreground/75 hover:border-primary/20 hover:bg-primary/5',
-              isSelected && !isEstop && 'border-primary/30 bg-primary/10 text-primary shadow-sm',
-              isSelected && isEstop && 'border-destructive/35 bg-destructive/12 shadow-sm',
-              disabled && 'pointer-events-none opacity-55'
+        {open && (
+          <div style={{
+            position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+            background: 'white', borderRadius: S.r,
+            border: '1px solid oklch(0.88 0.01 250)',
+            boxShadow: '0 8px 24px rgba(18,42,94,0.14)',
+            overflow: 'hidden', zIndex: 52,
+          }}>
+            {profiles.length === 0 ? (
+              <div style={{ padding: S.pad, fontSize: S.fsXs, color: 'oklch(0.60 0.02 250)' }}>
+                Sin perfiles
+              </div>
+            ) : (
+              profiles.map((p, i) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => { onSelect(p.id); setOpen(false) }}
+                  style={{
+                    display: 'flex', alignItems: 'center', width: '100%', textAlign: 'left',
+                    borderTop: i === 0 ? 'none' : '1px solid oklch(0.93 0.01 250)',
+                    background: p.id === selectedId ? 'oklch(0.30 0.07 250 / 0.07)' : 'transparent',
+                    padding: `${S.padSm} ${S.pad}`, border: 'none',
+                    fontSize: S.fs, fontWeight: p.id === selectedId ? 600 : 400,
+                    color: 'oklch(0.15 0.02 250)', cursor: 'pointer', gap: S.gapSm,
+                  }}
+                >
+                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {p.name}
+                  </span>
+                </button>
+              ))
             )}
-          >
-            <div className="flex items-center justify-between">
-              <ActionGlyph action={action} className={isEstop ? 'text-[14px]' : 'w-4 h-4'} />
-              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                {action.group}
-              </span>
-            </div>
-            <p className={cn('mt-4 text-sm font-semibold', isEstop ? 'text-destructive' : 'text-foreground')}>
-              {action.label}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">{action.shortLabel}</p>
-          </button>
-        )
-      })}
-    </div>
+          </div>
+        )}
+      </div>
+    </>
   )
 }
 
-function StepRow({ step, index, isCurrent, canMoveUp, canMoveDown, onMove, onRemove, disabled }) {
+// ─── Step row ─────────────────────────────────────────────────────────────────
+
+function StepRow({ step, index, isCurrent, canMoveUp, canMoveDown, onMove, onRemove, disabled, readOnly }) {
   const action = getActionForStep(step)
   const isEstop = step.type === 'estop'
 
   return (
-    <div
-      className={cn(
-        'grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border px-3 py-3 transition-all duration-150',
-        isCurrent ? 'border-primary/35 bg-primary/8 shadow-sm' : 'border-border/70 bg-card/75',
-        isEstop && !isCurrent && 'border-destructive/15 bg-destructive/5'
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: readOnly ? `${S.icon} minmax(0,1fr)` : `${S.icon} minmax(0,1fr) auto`,
+      alignItems: 'center',
+      gap: S.gapSm,
+      borderRadius: S.r,
+      border: `1px solid ${isCurrent ? 'oklch(0.30 0.07 250 / 0.4)' : isEstop ? 'oklch(0.55 0.24 25 / 0.2)' : 'oklch(0.88 0.01 250)'}`,
+      background: isCurrent ? 'oklch(0.30 0.07 250 / 0.07)' : isEstop ? 'oklch(0.55 0.24 25 / 0.04)' : 'white',
+      padding: S.padSm,
+      transition: 'background 150ms, border-color 150ms',
+    }}>
+      <div style={{
+        width: S.icon, height: S.icon,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        borderRadius: S.rSm,
+        background: isCurrent ? 'oklch(0.30 0.07 250 / 0.12)' : 'oklch(0.93 0.01 250)',
+        color: isEstop ? 'oklch(0.55 0.24 25)' : isCurrent ? 'oklch(0.30 0.07 250)' : 'oklch(0.45 0.02 250)',
+        flexShrink: 0, gap: 1,
+      }}>
+        <span style={{ fontSize: S.fsLabel, fontWeight: 700, lineHeight: 1, color: 'oklch(0.65 0.02 250)' }}>
+          {index + 1}
+        </span>
+        <StepGlyph step={step} />
+      </div>
+
+      <div style={{ minWidth: 0 }}>
+        <p style={{
+          fontSize: S.fs, fontWeight: 600, margin: 0, lineHeight: 1.2,
+          color: isEstop ? 'oklch(0.55 0.24 25)' : 'oklch(0.15 0.02 250)',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {action?.label ?? 'Paso'}
+        </p>
+        <p style={{ fontSize: S.fsXs, color: 'oklch(0.55 0.02 250)', margin: 0, lineHeight: 1.2 }}>
+          {formatDuration(step.durationMs)}{isCurrent ? ' · ejecutando' : ''}
+        </p>
+      </div>
+
+      {!readOnly && (
+        <div style={{ display: 'flex', gap: 2 }}>
+          {[
+            { label: '↑', onClick: () => onMove(index, -1), dis: disabled || !canMoveUp,  dest: false },
+            { label: '↓', onClick: () => onMove(index, 1),  dis: disabled || !canMoveDown, dest: false },
+            { label: '×', onClick: () => onRemove(index),   dis: disabled,                 dest: true  },
+          ].map(({ label, onClick, dis, dest }) => (
+            <button key={label} type="button" onClick={onClick} disabled={dis} style={{
+              borderRadius: S.rSm,
+              border: `1px solid ${dest ? 'oklch(0.55 0.24 25 / 0.25)' : 'oklch(0.88 0.01 250)'}`,
+              background: dest ? 'oklch(0.55 0.24 25 / 0.06)' : 'white',
+              color: dest ? 'oklch(0.55 0.24 25)' : 'oklch(0.50 0.02 250)',
+              padding: '2px 6px', fontSize: 11, fontWeight: 700,
+              cursor: dis ? 'not-allowed' : 'pointer', opacity: dis ? 0.35 : 1, lineHeight: 1.4,
+            }}>
+              {label}
+            </button>
+          ))}
+        </div>
       )}
-    >
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/70 text-muted-foreground">
-        <ActionGlyph action={action} className={isEstop ? 'text-[13px]' : 'w-4 h-4'} />
-      </div>
-
-      <div className="min-w-0">
-        <p className={cn('truncate text-sm font-semibold', isEstop ? 'text-destructive' : 'text-foreground')}>
-          {action?.label || 'Paso'}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          {formatDuration(step.durationMs)} {isCurrent ? '• ejecutando' : ''}
-        </p>
-      </div>
-
-      <div className="flex items-center gap-1">
-        <button
-          type="button"
-          onClick={() => onMove(index, -1)}
-          disabled={disabled || !canMoveUp}
-          className="rounded-lg border border-border/70 bg-background px-2 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-35"
-        >
-          ↑
-        </button>
-        <button
-          type="button"
-          onClick={() => onMove(index, 1)}
-          disabled={disabled || !canMoveDown}
-          className="rounded-lg border border-border/70 bg-background px-2 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-35"
-        >
-          ↓
-        </button>
-        <button
-          type="button"
-          onClick={() => onRemove(index)}
-          disabled={disabled}
-          className="rounded-lg border border-destructive/20 bg-destructive/5 px-2 py-1 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10 disabled:pointer-events-none disabled:opacity-35"
-        >
-          Quitar
-        </button>
-      </div>
     </div>
   )
 }
 
+// ─── Sequence editor ──────────────────────────────────────────────────────────
+
 function SequenceEditor({
-  profiles,
-  selectedProfileId,
-  onSelectProfile,
-  onLoadProfile,
-  onClearDraft,
-  selectedActionKey,
-  onSelectAction,
-  durationInput,
-  onDurationInputChange,
-  onAddStep,
-  draftSteps,
-  onMoveStep,
-  onRemoveStep,
-  isPlaying,
-  activeStepIndex,
-  onPlay,
-  onStop,
+  sequences, selectedProfileId, onSelectProfile,
+  isEditing, onStartEdit, onCancelEdit, onSaveEdit,
+  editName, onEditNameChange,
+  onCreateProfile, onDeleteProfile, onClearDraft,
+  durationInput, onDurationInputChange, onAddEstopStep,
+  draftSteps, onMoveStep, onRemoveStep,
+  isPlaying, activeStepIndex, onPlay, onStop,
+  maxSteps,
 }) {
-  return (
-    <div className="space-y-3">
-      <div className="grid gap-2 xl:grid-cols-[minmax(0,1fr)_auto_auto]">
-        <label className="space-y-2">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            Perfil base
-          </span>
-          <select
-            value={selectedProfileId}
-            onChange={(event) => onSelectProfile(event.target.value)}
-            disabled={isPlaying || profiles.length === 0}
-            className="w-full rounded-2xl border border-border/70 bg-card px-4 py-3 text-sm font-medium text-foreground shadow-sm outline-none transition-colors focus:border-primary/35 disabled:pointer-events-none disabled:opacity-60"
-          >
-            {profiles.length === 0 ? (
-              <option value="">Sin perfiles</option>
-            ) : (
-              profiles.map((profile) => (
-                <option key={profile.id} value={profile.id}>
-                  {profile.name}
-                </option>
-              ))
-            )}
-          </select>
-        </label>
+  const [showNewForm, setShowNewForm]       = useState(false)
+  const [newProfileName, setNewProfileName] = useState('')
+  const atLimit = draftSteps.length >= maxSteps
+  const selectedProfile = sequences.find((p) => p.id === selectedProfileId)
 
-        <button
-          type="button"
-          onClick={onLoadProfile}
-          disabled={isPlaying || profiles.length === 0}
-          className="self-end rounded-2xl border border-border/70 bg-card px-4 py-3 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted/40 disabled:pointer-events-none disabled:opacity-60"
-        >
-          Cargar perfil
-        </button>
+  const listRef = useRef(null)
 
-        <button
-          type="button"
-          onClick={onClearDraft}
-          disabled={isPlaying}
-          className="self-end rounded-2xl border border-border/70 bg-background px-4 py-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-60"
-        >
-          Limpiar borrador
-        </button>
-      </div>
+  // Scroll to active step during playback
+  useEffect(() => {
+    if (!listRef.current || activeStepIndex === null) return
+    const items = listRef.current.children
+    if (items[activeStepIndex]) items[activeStepIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [activeStepIndex])
 
-      <div className="rounded-3xl border border-border/70 bg-background/70 p-3">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Constructor
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Primero elige el movimiento y luego define cuánto tiempo debe durar.
-            </p>
-          </div>
-          <div className="rounded-full bg-muted/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            {draftSteps.length} pasos
-          </div>
+  // Scroll to newest step when adding (not playing)
+  useEffect(() => {
+    if (!listRef.current || isPlaying || draftSteps.length === 0) return
+    const items = listRef.current.children
+    const last = items[items.length - 1]
+    if (last) last.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [draftSteps.length, isPlaying])
+
+  const handleCreateSubmit = () => {
+    if (!newProfileName.trim()) return
+    onCreateProfile(newProfileName)
+    setNewProfileName('')
+    setShowNewForm(false)
+  }
+
+  // ── Shared step list ──────────────────────────────────────────────────────
+
+  const stepList = (
+    <div ref={listRef} style={{
+      display: 'flex', flexDirection: 'column', gap: S.gapSm,
+      maxHeight: 'clamp(60px, 26vh, 220px)', overflowY: 'auto', paddingRight: 2,
+    }}>
+      {draftSteps.length === 0 ? (
+        <div style={{
+          borderRadius: S.r, border: '1px dashed oklch(0.85 0.01 250)',
+          background: 'white', padding: S.pad,
+          textAlign: 'center', fontSize: S.fsXs, color: 'oklch(0.60 0.02 250)',
+        }}>
+          {isEditing ? 'Toca el DPad o los giros para agregar pasos' : 'Sin pasos'}
         </div>
-
-        <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1fr)_190px]">
-          <ActionSelector
-            selectedActionKey={selectedActionKey}
-            onSelectAction={onSelectAction}
+      ) : (
+        draftSteps.map((step, index) => (
+          <StepRow
+            key={`${step.type}-${step.value ?? 'estop'}-${index}`}
+            step={step} index={index}
+            isCurrent={activeStepIndex === index}
+            canMoveUp={index > 0}
+            canMoveDown={index < draftSteps.length - 1}
+            onMove={onMoveStep} onRemove={onRemoveStep}
             disabled={isPlaying}
+            readOnly={!isEditing}
           />
+        ))
+      )}
+    </div>
+  )
 
-          <div className="rounded-2xl border border-border/70 bg-card/80 p-3 shadow-sm">
-            <label className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Duracion
-            </label>
-            <div className="mt-2 flex items-end gap-2">
-              <input
-                type="number"
-                min="100"
-                step="100"
-                inputMode="numeric"
-                value={durationInput}
-                onChange={(event) => onDurationInputChange(event.target.value)}
-                disabled={isPlaying}
-                className="w-full rounded-2xl border border-border/70 bg-background px-4 py-3 text-lg font-semibold text-foreground outline-none transition-colors focus:border-primary/35 disabled:pointer-events-none disabled:opacity-60"
-              />
-              <span className="pb-3 text-sm font-medium text-muted-foreground">ms</span>
+  // ── Edit mode ─────────────────────────────────────────────────────────────
+
+  if (isEditing) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: S.gap }}>
+
+        {/* Name input */}
+        <input
+          type="text"
+          value={editName}
+          onChange={(e) => onEditNameChange(e.target.value)}
+          placeholder="Nombre de la secuencia…"
+          style={{
+            borderRadius: S.r, border: '1px solid oklch(0.88 0.01 250)',
+            background: 'white', padding: `${S.padSm} ${S.pad}`,
+            fontSize: S.fs, fontWeight: 600, color: 'oklch(0.15 0.02 250)', outline: 'none',
+          }}
+        />
+
+        {/* Duration + E-STOP */}
+        <div style={{
+          display: 'flex', gap: S.gapSm, alignItems: 'center',
+          borderRadius: S.r, border: '1px solid oklch(0.88 0.01 250)',
+          background: 'oklch(0.97 0.005 250 / 0.8)', padding: S.pad,
+        }}>
+          <span style={{
+            fontSize: S.fsLabel, fontWeight: 700, textTransform: 'uppercase',
+            letterSpacing: '0.14em', color: 'oklch(0.55 0.02 250)', flexShrink: 0,
+          }}>Dur.</span>
+          <input
+            type="number" min="0.1" max="30" step="0.1" inputMode="decimal"
+            value={durationInput}
+            onChange={(e) => onDurationInputChange(e.target.value)}
+            disabled={isPlaying}
+            style={{
+              flex: 1, borderRadius: S.rSm, border: '1px solid oklch(0.88 0.01 250)',
+              background: 'white', padding: `${S.padSm} 8px`,
+              fontSize: S.fs, fontWeight: 700, color: 'oklch(0.15 0.02 250)',
+              outline: 'none', minWidth: 0, opacity: isPlaying ? 0.6 : 1,
+            }}
+          />
+          <span style={{ fontSize: S.fsXs, color: 'oklch(0.55 0.02 250)', flexShrink: 0 }}>s</span>
+          <button type="button" onClick={onAddEstopStep} disabled={isPlaying || atLimit}
+            style={{
+              borderRadius: S.r, border: '1px solid oklch(0.55 0.24 25 / 0.3)',
+              background: 'oklch(0.55 0.24 25 / 0.08)', color: 'oklch(0.55 0.24 25)',
+              padding: `${S.padSm} ${S.pad}`, fontSize: S.fsXs, fontWeight: 700,
+              cursor: (isPlaying || atLimit) ? 'not-allowed' : 'pointer',
+              opacity: (isPlaying || atLimit) ? 0.55 : 1, flexShrink: 0,
+            }}>
+            + E-STOP
+          </button>
+        </div>
+
+        {/* Hint */}
+        <p style={{
+          fontSize: S.fsLabel, color: atLimit ? 'oklch(0.55 0.24 25)' : 'oklch(0.55 0.02 250)',
+          margin: 0, textAlign: 'center', fontWeight: atLimit ? 600 : 400,
+        }}>
+          {atLimit ? `Límite de ${maxSteps} pasos alcanzado` : 'Toca el DPad o los giros para agregar pasos'}
+        </p>
+
+        {/* Step list */}
+        <div style={{
+          borderRadius: S.r, border: '1px solid oklch(0.88 0.01 250)',
+          background: 'oklch(0.97 0.005 250 / 0.8)', padding: S.pad,
+          display: 'flex', flexDirection: 'column', gap: S.gapSm,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: S.gapSm }}>
+            <span style={{
+              fontSize: S.fsLabel, fontWeight: 700, textTransform: 'uppercase',
+              letterSpacing: '0.14em', color: 'oklch(0.50 0.02 250)',
+            }}>
+              {draftSteps.length}/{maxSteps} pasos
+            </span>
+            <div style={{ display: 'flex', gap: S.gapSm }}>
+              <button type="button" onClick={onClearDraft} disabled={isPlaying || draftSteps.length === 0}
+                style={{
+                  borderRadius: S.r, border: '1px solid oklch(0.88 0.01 250)',
+                  background: 'white', padding: `${S.padSm} ${S.pad}`,
+                  fontSize: S.fsXs, fontWeight: 600, color: 'oklch(0.55 0.02 250)',
+                  cursor: (isPlaying || draftSteps.length === 0) ? 'not-allowed' : 'pointer',
+                  opacity: (isPlaying || draftSteps.length === 0) ? 0.5 : 1, flexShrink: 0,
+                }}>
+                Limpiar
+              </button>
+              <button type="button" onClick={onSaveEdit} disabled={isPlaying || !editName.trim()}
+                style={{
+                  borderRadius: S.r, border: 'none',
+                  background: (!isPlaying && editName.trim()) ? 'oklch(0.30 0.07 250)' : 'oklch(0.88 0.01 250)',
+                  color: (!isPlaying && editName.trim()) ? 'white' : 'oklch(0.60 0.02 250)',
+                  padding: `${S.padSm} ${S.pad}`, fontSize: S.fsXs, fontWeight: 700,
+                  cursor: (isPlaying || !editName.trim()) ? 'not-allowed' : 'pointer',
+                  flexShrink: 0, transition: 'background 150ms',
+                }}>
+                Guardar
+              </button>
+              <button type="button" onClick={onCancelEdit} disabled={isPlaying}
+                style={{
+                  borderRadius: S.r, border: '1px solid oklch(0.88 0.01 250)',
+                  background: 'white', padding: `${S.padSm} ${S.pad}`,
+                  fontSize: S.fsXs, fontWeight: 600, color: 'oklch(0.50 0.02 250)',
+                  cursor: isPlaying ? 'not-allowed' : 'pointer', opacity: isPlaying ? 0.5 : 1, flexShrink: 0,
+                }}>
+                Cancelar
+              </button>
             </div>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              Usa valores enteros positivos. Recomendado: 300 a 3000 ms por paso.
-            </p>
-
-            <button
-              type="button"
-              onClick={onAddStep}
-              disabled={isPlaying}
-              className="mt-4 w-full rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:brightness-105 disabled:pointer-events-none disabled:opacity-60"
-            >
-              Agregar paso
-            </button>
           </div>
+          {stepList}
         </div>
       </div>
+    )
+  }
 
-      <div className="rounded-3xl border border-border/70 bg-background/70 p-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Lista
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Reordena, revisa tiempos y luego reproduce la secuencia desde aquí.
-            </p>
-          </div>
+  // ── View mode ─────────────────────────────────────────────────────────────
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onPlay}
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: S.gap }}>
+
+      {/* Profile row: dropdown + nueva + trash + editar */}
+      <div style={{ display: 'flex', gap: S.gapSm, alignItems: 'center' }}>
+        <ProfileDropdown
+          profiles={sequences}
+          selectedId={selectedProfileId}
+          onSelect={onSelectProfile}
+          disabled={isPlaying}
+        />
+        <button
+          type="button"
+          onClick={() => setShowNewForm((v) => !v)}
+          disabled={isPlaying}
+          title="Nueva secuencia"
+          style={{
+            flexShrink: 0, borderRadius: S.r,
+            border: '1px dashed oklch(0.78 0.03 250)',
+            background: showNewForm ? 'oklch(0.93 0.01 250)' : 'transparent',
+            color: 'oklch(0.40 0.04 250)',
+            padding: `${S.padSm} 10px`,
+            fontSize: S.fs, fontWeight: 700, lineHeight: 1,
+            cursor: isPlaying ? 'not-allowed' : 'pointer', opacity: isPlaying ? 0.4 : 1,
+          }}
+        >
+          ＋
+        </button>
+        {selectedProfile?.isUserCreated && (
+          <button
+            type="button"
+            onClick={() => onDeleteProfile(selectedProfileId)}
+            disabled={isPlaying}
+            title="Eliminar secuencia"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, borderRadius: S.r,
+              border: '1px solid oklch(0.55 0.24 25 / 0.3)',
+              background: 'oklch(0.55 0.24 25 / 0.06)', color: 'oklch(0.55 0.24 25)',
+              padding: `${S.padSm} 10px`,
+              cursor: isPlaying ? 'not-allowed' : 'pointer', opacity: isPlaying ? 0.5 : 1,
+            }}
+          >
+            <svg width={13} height={13} viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14H6L5 6" />
+              <path d="M10 11v6M14 11v6" />
+              <path d="M9 6V4h6v2" />
+            </svg>
+          </button>
+        )}
+        {selectedProfile && (
+          <button
+            type="button"
+            onClick={onStartEdit}
+            disabled={isPlaying}
+            style={{
+              flexShrink: 0, borderRadius: S.r,
+              border: '1px solid oklch(0.30 0.07 250 / 0.35)',
+              background: 'oklch(0.30 0.07 250 / 0.07)', color: 'oklch(0.25 0.07 250)',
+              padding: `${S.padSm} ${S.pad}`,
+              fontSize: S.fsXs, fontWeight: 600,
+              cursor: isPlaying ? 'not-allowed' : 'pointer', opacity: isPlaying ? 0.5 : 1,
+            }}
+          >
+            Editar
+          </button>
+        )}
+      </div>
+
+      {/* Nueva secuencia form (expands below the row) */}
+      {showNewForm && (
+        <div style={{ display: 'flex', gap: S.gapSm }}>
+          <input
+            type="text"
+            value={newProfileName}
+            onChange={(e) => setNewProfileName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleCreateSubmit()}
+            placeholder="Nombre de la secuencia…"
+            autoFocus
+            style={{
+              flex: 1, borderRadius: S.r, border: '1px solid oklch(0.88 0.01 250)',
+              background: 'white', padding: `${S.padSm} ${S.pad}`,
+              fontSize: S.fsXs, color: 'oklch(0.20 0.02 250)', outline: 'none',
+            }}
+          />
+          <button type="button" onClick={handleCreateSubmit} disabled={!newProfileName.trim()}
+            style={{
+              borderRadius: S.r, border: 'none',
+              background: newProfileName.trim() ? 'oklch(0.30 0.07 250)' : 'oklch(0.88 0.01 250)',
+              color: newProfileName.trim() ? 'white' : 'oklch(0.60 0.02 250)',
+              padding: `${S.padSm} ${S.pad}`, fontSize: S.fsXs, fontWeight: 700,
+              cursor: newProfileName.trim() ? 'pointer' : 'not-allowed', flexShrink: 0,
+            }}>
+            Crear
+          </button>
+          <button type="button" onClick={() => { setShowNewForm(false); setNewProfileName('') }}
+            style={{
+              borderRadius: S.r, border: '1px solid oklch(0.88 0.01 250)',
+              background: 'white', padding: `${S.padSm} 10px`,
+              fontSize: S.fsXs, fontWeight: 700, color: 'oklch(0.50 0.02 250)',
+              cursor: 'pointer', flexShrink: 0,
+            }}>
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Step list + playback */}
+      <div style={{
+        borderRadius: S.r, border: '1px solid oklch(0.88 0.01 250)',
+        background: 'oklch(0.97 0.005 250 / 0.8)', padding: S.pad,
+        display: 'flex', flexDirection: 'column', gap: S.gapSm,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: S.gapSm }}>
+          <span style={{
+            fontSize: S.fsLabel, fontWeight: 700, textTransform: 'uppercase',
+            letterSpacing: '0.14em', color: 'oklch(0.50 0.02 250)',
+          }}>
+            {draftSteps.length}/{maxSteps} pasos
+          </span>
+          <div style={{ display: 'flex', gap: S.gapSm }}>
+            <button type="button" onClick={onPlay}
               disabled={isPlaying || draftSteps.length === 0}
-              className="rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:brightness-105 disabled:pointer-events-none disabled:opacity-60"
-            >
-              Reproducir
+              style={{
+                borderRadius: S.r, border: 'none',
+                background: 'oklch(0.30 0.07 250)', color: 'white',
+                padding: `${S.padSm} ${S.pad}`, fontSize: S.fsXs, fontWeight: 700,
+                cursor: (isPlaying || draftSteps.length === 0) ? 'not-allowed' : 'pointer',
+                opacity: (isPlaying || draftSteps.length === 0) ? 0.6 : 1, flexShrink: 0,
+              }}>
+              {isPlaying ? 'Reproduciendo…' : 'Reproducir'}
             </button>
-            <button
-              type="button"
-              onClick={onStop}
-              disabled={!isPlaying}
-              className="rounded-2xl border border-border/70 bg-card px-4 py-2.5 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted/40 disabled:pointer-events-none disabled:opacity-60"
-            >
+            <button type="button" onClick={onStop} disabled={!isPlaying}
+              style={{
+                borderRadius: S.r, border: '1px solid oklch(0.88 0.01 250)',
+                background: 'white', color: 'oklch(0.25 0.03 250)',
+                padding: `${S.padSm} ${S.pad}`, fontSize: S.fsXs, fontWeight: 700,
+                cursor: !isPlaying ? 'not-allowed' : 'pointer',
+                opacity: !isPlaying ? 0.55 : 1, flexShrink: 0,
+              }}>
               Detener
             </button>
           </div>
         </div>
-
-        <div className="mt-3 max-h-[200px] space-y-2 overflow-auto pr-1">
-          {draftSteps.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border/80 bg-card/50 px-4 py-8 text-center text-sm text-muted-foreground">
-              Todavia no hay pasos. Selecciona un movimiento y agrega la duracion para comenzar.
-            </div>
-          ) : (
-            draftSteps.map((step, index) => (
-              <StepRow
-                key={`${step.type}-${step.value || 'estop'}-${index}`}
-                step={step}
-                index={index}
-                isCurrent={activeStepIndex === index}
-                canMoveUp={index > 0}
-                canMoveDown={index < draftSteps.length - 1}
-                onMove={onMoveStep}
-                onRemove={onRemoveStep}
-                disabled={isPlaying}
-              />
-            ))
-          )}
-        </div>
+        {stepList}
       </div>
+
     </div>
   )
 }
 
-export function CenterPanel(props) {
-  const {
-    mode,
-    onModeChange,
-    expanded,
-    onToggleExpanded,
-    profiles,
-    selectedProfileId,
-    onSelectProfile,
-    onLoadProfile,
-    onClearDraft,
-    selectedActionKey,
-    onSelectAction,
-    durationInput,
-    onDurationInputChange,
-    onAddStep,
-    draftSteps,
-    onMoveStep,
-    onRemoveStep,
-    isPlaying,
-    activeStepIndex,
-    onPlay,
-    onStop,
-  } = props
+// ─── CenterPanel ──────────────────────────────────────────────────────────────
 
+export function CenterPanel({
+  mode, onModeChange,
+  sequences, selectedProfileId, onSelectProfile,
+  isEditing, onStartEdit, onCancelEdit, onSaveEdit,
+  editName, onEditNameChange,
+  onCreateProfile, onDeleteProfile, onClearDraft,
+  durationInput, onDurationInputChange, onAddEstopStep,
+  draftSteps, onMoveStep, onRemoveStep,
+  isPlaying, activeStepIndex, onPlay, onStop,
+  maxSteps,
+}) {
   return (
-    <section
-      className="w-full rounded-[2rem] border border-border/70 bg-card/75 p-3 shadow-[0_12px_30px_rgba(18,42,94,0.08)] backdrop-blur-[2px] sm:p-4"
-      style={{
-        width: 'var(--center-panel-width)',
-        maxHeight: 'min(100%, calc(100dvh - var(--btn-size) * 2.5 - 5.5rem))',
-      }}
-    >
-      <div className="space-y-3 overflow-y-auto pr-1">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary/60">
-              Centro operativo
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Panel desplegable para control manual y secuencias.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onToggleExpanded}
-              aria-expanded={expanded}
-              className="inline-flex items-center gap-2 rounded-2xl border border-border/70 bg-background px-3 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted/40"
-            >
-              {expanded ? 'Ocultar' : 'Desplegar'}
-              <ChevronGlyph expanded={expanded} />
-            </button>
-          </div>
-          <div className="min-w-[200px]">
-            <ModeSwitch mode={mode} onChange={onModeChange} disabled={false} />
-          </div>
-        </div>
+    <section style={{
+      width: 'var(--center-panel-width)',
+      maxHeight: 'min(100%, calc(100dvh - var(--btn-size) * 2.5 - 5.5rem))',
+      overflowY: 'auto', overflowX: 'hidden',
+      borderRadius: 'clamp(16px, 2.8vh, 28px)',
+      border: '1px solid oklch(0.90 0.01 250)',
+      background: 'oklch(1 0 0 / 0.82)',
+      boxShadow: '0 8px 28px oklch(0.30 0.07 250 / 0.09)',
+      backdropFilter: 'blur(4px)',
+      padding: S.pad,
+      display: 'flex', flexDirection: 'column', gap: S.gap,
+    }}>
+      <ModeSwitch mode={mode} onChange={onModeChange} />
 
-        {expanded ? (
-          mode === 'manual' ? (
-            <ManualOverview sequenceCount={profiles.length} />
-          ) : (
-            <SequenceEditor
-              profiles={profiles}
-              selectedProfileId={selectedProfileId}
-              onSelectProfile={onSelectProfile}
-              onLoadProfile={onLoadProfile}
-              onClearDraft={onClearDraft}
-              selectedActionKey={selectedActionKey}
-              onSelectAction={onSelectAction}
-              durationInput={durationInput}
-              onDurationInputChange={onDurationInputChange}
-              onAddStep={onAddStep}
-              draftSteps={draftSteps}
-              onMoveStep={onMoveStep}
-              onRemoveStep={onRemoveStep}
-              isPlaying={isPlaying}
-              activeStepIndex={activeStepIndex}
-              onPlay={onPlay}
-              onStop={onStop}
-            />
-          )
-        ) : (
-          <div className="rounded-2xl border border-dashed border-border/80 bg-background/45 px-4 py-3 text-sm text-muted-foreground">
-            {mode === 'manual'
-              ? 'Manual listo. Despliega este panel si quieres ver el estado o cambiar a secuencia.'
-              : 'Secuencia lista. Despliega este panel para editar pasos, cargar perfiles o reproducir.'}
-          </div>
-        )}
-      </div>
+      {mode === 'manual' && (
+        <p style={{ fontSize: S.fsXs, color: 'oklch(0.60 0.02 250)', margin: 0, textAlign: 'center' }}>
+          Control directo activo · usa el DPad y los giros
+        </p>
+      )}
+
+      {mode === 'sequence' && (
+        <SequenceEditor
+          sequences={sequences}
+          selectedProfileId={selectedProfileId}
+          onSelectProfile={onSelectProfile}
+          isEditing={isEditing}
+          onStartEdit={onStartEdit}
+          onCancelEdit={onCancelEdit}
+          onSaveEdit={onSaveEdit}
+          editName={editName}
+          onEditNameChange={onEditNameChange}
+          onCreateProfile={onCreateProfile}
+          onDeleteProfile={onDeleteProfile}
+          onClearDraft={onClearDraft}
+          durationInput={durationInput}
+          onDurationInputChange={onDurationInputChange}
+          onAddEstopStep={onAddEstopStep}
+          draftSteps={draftSteps}
+          onMoveStep={onMoveStep}
+          onRemoveStep={onRemoveStep}
+          isPlaying={isPlaying}
+          activeStepIndex={activeStepIndex}
+          onPlay={onPlay}
+          onStop={onStop}
+          maxSteps={maxSteps}
+        />
+      )}
     </section>
   )
 }
