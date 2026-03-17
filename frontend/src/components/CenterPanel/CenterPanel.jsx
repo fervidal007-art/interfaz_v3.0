@@ -340,16 +340,6 @@ function SequenceEditor({
             }}
           />
           <span style={{ fontSize: S.fsXs, color: 'oklch(0.55 0.02 250)', flexShrink: 0 }}>s</span>
-          <button type="button" onClick={onAddEstopStep} disabled={isPlaying || atLimit}
-            style={{
-              borderRadius: S.r, border: '1px solid oklch(0.55 0.24 25 / 0.3)',
-              background: 'oklch(0.55 0.24 25 / 0.08)', color: 'oklch(0.55 0.24 25)',
-              padding: `${S.padSm} ${S.pad}`, fontSize: S.fsXs, fontWeight: 700,
-              cursor: (isPlaying || atLimit) ? 'not-allowed' : 'pointer',
-              opacity: (isPlaying || atLimit) ? 0.55 : 1, flexShrink: 0,
-            }}>
-            + E-STOP
-          </button>
         </div>
 
         {/* Hint */}

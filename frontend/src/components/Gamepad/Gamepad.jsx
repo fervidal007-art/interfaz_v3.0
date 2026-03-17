@@ -301,7 +301,7 @@ export function Gamepad({ send }) {
         style={{ gridTemplateColumns: 'auto minmax(0, 1fr) auto', columnGap: 'clamp(12px, 2vw, 26px)' }}
       >
         <div className="justify-self-start">
-          <DPad onDirection={handleDirection} disabled={isPlaying} />
+          <DPad onDirection={handleDirection} disabled={isPlaying || (mode === 'sequence' && !isEditing)} />
         </div>
 
         <div className="min-w-0 flex justify-center px-[1vw]">
@@ -336,7 +336,7 @@ export function Gamepad({ send }) {
         </div>
 
         <div className="justify-self-end">
-          <RotationControl onRotate={handleRotate} disabled={isPlaying} />
+          <RotationControl onRotate={handleRotate} disabled={isPlaying || (mode === 'sequence' && !isEditing)} />
         </div>
       </div>
 
