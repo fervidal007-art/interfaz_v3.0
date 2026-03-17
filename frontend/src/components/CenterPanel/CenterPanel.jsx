@@ -143,7 +143,7 @@ function ProfileDropdown({ profiles, selectedId, onSelect, disabled }) {
 
 // ─── Step row ─────────────────────────────────────────────────────────────────
 
-function StepRow({ step, index, isCurrent, canMoveUp, canMoveDown, onMove, onRemove, disabled, readOnly }) {
+function StepRow({ step, index, isCurrent, canMoveUp, canMoveDown, onMove, onRemove, onChangeDuration, disabled, readOnly }) {
   const action = getActionForStep(step)
   const isEstop = step.type === 'estop'
 
@@ -181,9 +181,31 @@ function StepRow({ step, index, isCurrent, canMoveUp, canMoveDown, onMove, onRem
         }}>
           {action?.label ?? 'Paso'}
         </p>
-        <p style={{ fontSize: S.fsXs, color: 'oklch(0.55 0.02 250)', margin: 0, lineHeight: 1.2 }}>
-          {formatDuration(step.durationMs)}{isCurrent ? ' · ejecutando' : ''}
-        </p>
+        {!readOnly ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 1 }}>
+            <input
+              type="number" min="0.1" max="30" step="0.1" inputMode="decimal"
+              value={+(step.durationMs / 1000).toFixed(1)}
+              onChange={(e) => {
+                const ms = Math.max(100, Math.round((Number(e.target.value) || 0.1) * 1000))
+                onChangeDuration(index, ms)
+              }}
+              disabled={disabled}
+              style={{
+                width: 44, borderRadius: S.rSm, border: '1px solid oklch(0.88 0.01 250)',
+                background: 'white', padding: '1px 4px',
+                fontSize: S.fsLabel, fontWeight: 700, color: 'oklch(0.25 0.02 250)',
+                outline: 'none', opacity: disabled ? 0.6 : 1,
+              }}
+            />
+            <span style={{ fontSize: S.fsLabel, color: 'oklch(0.55 0.02 250)' }}>s</span>
+            {isCurrent && <span style={{ fontSize: S.fsLabel, color: 'oklch(0.30 0.07 250)' }}>· ejecutando</span>}
+          </div>
+        ) : (
+          <p style={{ fontSize: S.fsXs, color: 'oklch(0.55 0.02 250)', margin: 0, lineHeight: 1.2 }}>
+            {formatDuration(step.durationMs)}{isCurrent ? ' · ejecutando' : ''}
+          </p>
+        )}
       </div>
 
       {!readOnly && (
@@ -218,7 +240,7 @@ function SequenceEditor({
   editName, onEditNameChange,
   onCreateProfile, onDeleteProfile, onClearDraft,
   durationInput, onDurationInputChange, onAddEstopStep,
-  draftSteps, onMoveStep, onRemoveStep,
+  draftSteps, onMoveStep, onRemoveStep, onChangeDuration,
   isPlaying, activeStepIndex, onPlay, onStop,
   maxSteps,
 }) {
@@ -274,7 +296,7 @@ function SequenceEditor({
             isCurrent={activeStepIndex === index}
             canMoveUp={index > 0}
             canMoveDown={index < draftSteps.length - 1}
-            onMove={onMoveStep} onRemove={onRemoveStep}
+            onMove={onMoveStep} onRemove={onRemoveStep} onChangeDuration={onChangeDuration}
             disabled={isPlaying}
             readOnly={!isEditing}
           />
@@ -561,7 +583,7 @@ export function CenterPanel({
   editName, onEditNameChange,
   onCreateProfile, onDeleteProfile, onClearDraft,
   durationInput, onDurationInputChange, onAddEstopStep,
-  draftSteps, onMoveStep, onRemoveStep,
+  draftSteps, onMoveStep, onRemoveStep, onChangeDuration,
   isPlaying, activeStepIndex, onPlay, onStop,
   maxSteps,
 }) {
@@ -606,6 +628,7 @@ export function CenterPanel({
           draftSteps={draftSteps}
           onMoveStep={onMoveStep}
           onRemoveStep={onRemoveStep}
+          onChangeDuration={onChangeDuration}
           isPlaying={isPlaying}
           activeStepIndex={activeStepIndex}
           onPlay={onPlay}

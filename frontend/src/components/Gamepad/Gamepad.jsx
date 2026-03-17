@@ -43,7 +43,10 @@ export function Gamepad({ send }) {
   const [editName, setEditName]             = useState('')
   const [isEditing, setIsEditing]           = useState(false)
   const [isNewProfile, setIsNewProfile]     = useState(false)
-  const [mode, setMode]                     = useState('manual')
+  const [mode, setMode] = useState(() => {
+    const tab = new URLSearchParams(window.location.search).get('tab')
+    return tab === 'secuencia' ? 'sequence' : 'manual'
+  })
   const [durationInput, setDurationInput]   = useState('1.2')
   const [isPlaying, setIsPlaying]           = useState(false)
   const [activeStepIndex, setActiveStepIndex] = useState(null)
@@ -197,10 +200,10 @@ export function Gamepad({ send }) {
 
   // ─── Control handlers ─────────────────────────────────────────────────────
 
-  // DPad/rotation only adds steps when: sequence mode + editing + profile selected
+  // In sequence mode: never send to robot. Only add steps when editing + profile selected.
   const handleDirection = (direction, pressed) => {
-    if (mode === 'sequence' && isEditing && selectedProfileId && !isPlaying) {
-      if (pressed) {
+    if (mode === 'sequence') {
+      if (isEditing && selectedProfileId && !isPlaying && pressed) {
         setDraftSteps((current) => {
           if (current.length >= MAX_STEPS) return current
           return [...current, { type: 'direction', value: direction, durationMs: makeDurationMs(durationInput) }]
@@ -212,8 +215,8 @@ export function Gamepad({ send }) {
   }
 
   const handleRotate = (direction, pressed) => {
-    if (mode === 'sequence' && isEditing && selectedProfileId && !isPlaying) {
-      if (pressed) {
+    if (mode === 'sequence') {
+      if (isEditing && selectedProfileId && !isPlaying && pressed) {
         setDraftSteps((current) => {
           if (current.length >= MAX_STEPS) return current
           return [...current, { type: 'rotate', value: direction, durationMs: makeDurationMs(durationInput) }]
@@ -256,6 +259,12 @@ export function Gamepad({ send }) {
     setDraftSteps((current) => current.filter((_, i) => i !== index))
   }
 
+  const handleChangeDuration = (index, durationMs) => {
+    setDraftSteps((current) =>
+      current.map((step, i) => i === index ? { ...step, durationMs } : step)
+    )
+  }
+
   const handlePlaySequence = () => {
     if (draftSteps.length === 0) return
     cancelSequencePlayback({ releaseActive: false })
@@ -267,6 +276,9 @@ export function Gamepad({ send }) {
 
   const handleModeChange = (nextMode) => {
     if (nextMode === mode) return
+    const url = new URL(window.location.href)
+    url.searchParams.set('tab', nextMode === 'sequence' ? 'secuencia' : 'manual')
+    window.history.replaceState({}, '', url)
     if (nextMode === 'manual') {
       cancelSequencePlayback()
       if (isEditing) handleCancelEdit()
@@ -314,6 +326,7 @@ export function Gamepad({ send }) {
             draftSteps={draftSteps}
             onMoveStep={handleMoveStep}
             onRemoveStep={handleRemoveStep}
+            onChangeDuration={handleChangeDuration}
             isPlaying={isPlaying}
             activeStepIndex={activeStepIndex}
             onPlay={handlePlaySequence}
