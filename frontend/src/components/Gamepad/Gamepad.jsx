@@ -265,6 +265,15 @@ export function Gamepad({ send }) {
     )
   }
 
+  const handleReorderSteps = (from, to) => {
+    setDraftSteps((current) => {
+      const next = [...current]
+      const [moved] = next.splice(from, 1)
+      next.splice(to, 0, moved)
+      return next
+    })
+  }
+
   const handlePlaySequence = () => {
     if (draftSteps.length === 0) return
     cancelSequencePlayback({ releaseActive: false })
@@ -324,7 +333,7 @@ export function Gamepad({ send }) {
             onDurationInputChange={setDurationInput}
             onAddEstopStep={handleAddEstopStep}
             draftSteps={draftSteps}
-            onMoveStep={handleMoveStep}
+            onReorderSteps={handleReorderSteps}
             onRemoveStep={handleRemoveStep}
             onChangeDuration={handleChangeDuration}
             isPlaying={isPlaying}

@@ -148,14 +148,16 @@ function ProfileDropdown({ profiles, selectedId, onSelect, disabled }) {
 
 // ─── Step row ─────────────────────────────────────────────────────────────────
 
-function StepRow({ step, index, isCurrent, onRemove, onChangeDuration, disabled, readOnly }) {
+function StepRow({ step, index, isCurrent, onRemove, onChangeDuration, disabled, readOnly, showHandle }) {
   const action = getActionForStep(step)
   const isEstop = step.type === 'estop'
 
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: readOnly ? `${S.icon} minmax(0,1fr)` : `${S.icon} minmax(0,1fr) auto`,
+      gridTemplateColumns: showHandle
+        ? `16px ${S.icon} minmax(0,1fr) auto`
+        : readOnly ? `${S.icon} minmax(0,1fr)` : `${S.icon} minmax(0,1fr) auto`,
       alignItems: 'center',
       gap: S.gapSm,
       borderRadius: S.r,
@@ -164,6 +166,18 @@ function StepRow({ step, index, isCurrent, onRemove, onChangeDuration, disabled,
       padding: S.padSm,
       transition: 'background 150ms, border-color 150ms',
     }}>
+      {showHandle && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'grab', color: 'oklch(0.72 0.01 250)', flexShrink: 0,
+        }}>
+          <svg width={11} height={11} viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="9" cy="6"  r="1.8"/><circle cx="15" cy="6"  r="1.8"/>
+            <circle cx="9" cy="12" r="1.8"/><circle cx="15" cy="12" r="1.8"/>
+            <circle cx="9" cy="18" r="1.8"/><circle cx="15" cy="18" r="1.8"/>
+          </svg>
+        </div>
+      )}
       <div style={{
         width: S.icon, height: S.icon,
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -244,9 +258,11 @@ function SequenceEditor({
   isPlaying, activeStepIndex, onPlay, onStop,
   maxSteps,
 }) {
-  const [showNewForm, setShowNewForm]         = useState(false)
-  const [newProfileName, setNewProfileName]   = useState('')
+  const [showNewForm, setShowNewForm]             = useState(false)
+  const [newProfileName, setNewProfileName]       = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [dragIndex, setDragIndex]                 = useState(null)
+  const [dropIndex, setDropIndex]                 = useState(null)
   const atLimit = draftSteps.length >= maxSteps
   const selectedProfile = sequences.find((p) => p.id === selectedProfileId)
 
@@ -291,14 +307,33 @@ function SequenceEditor({
         </div>
       ) : (
         draftSteps.map((step, index) => (
-          <StepRow
+          <div
             key={`${step.type}-${step.value ?? 'estop'}-${index}`}
-            step={step} index={index}
-            isCurrent={activeStepIndex === index}
-            onRemove={onRemoveStep} onChangeDuration={onChangeDuration}
-            disabled={isPlaying}
-            readOnly={!isEditing}
-          />
+            draggable={isEditing && !isPlaying}
+            onDragStart={() => setDragIndex(index)}
+            onDragOver={(e) => { e.preventDefault(); setDropIndex(index) }}
+            onDrop={(e) => {
+              e.preventDefault()
+              if (dragIndex !== null && dragIndex !== index) onReorderSteps(dragIndex, index)
+              setDragIndex(null); setDropIndex(null)
+            }}
+            onDragEnd={() => { setDragIndex(null); setDropIndex(null) }}
+            style={{
+              opacity: dragIndex === index ? 0.4 : 1,
+              outline: dropIndex === index && dragIndex !== index
+                ? '2px solid oklch(0.30 0.07 250 / 0.5)' : 'none',
+              borderRadius: S.r, transition: 'opacity 120ms',
+            }}
+          >
+            <StepRow
+              step={step} index={index}
+              isCurrent={activeStepIndex === index}
+              onRemove={onRemoveStep} onChangeDuration={onChangeDuration}
+              disabled={isPlaying}
+              readOnly={!isEditing}
+              showHandle={isEditing && !isPlaying}
+            />
+          </div>
         ))
       )}
     </div>
@@ -597,7 +632,7 @@ export function CenterPanel({
   editName, onEditNameChange,
   onCreateProfile, onDeleteProfile, onClearDraft,
   durationInput, onDurationInputChange, onAddEstopStep,
-  draftSteps, onMoveStep, onRemoveStep, onChangeDuration,
+  draftSteps, onReorderSteps, onRemoveStep, onChangeDuration,
   isPlaying, activeStepIndex, onPlay, onStop,
   maxSteps,
 }) {
@@ -640,7 +675,7 @@ export function CenterPanel({
           onDurationInputChange={onDurationInputChange}
           onAddEstopStep={onAddEstopStep}
           draftSteps={draftSteps}
-          onMoveStep={onMoveStep}
+          onReorderSteps={onReorderSteps}
           onRemoveStep={onRemoveStep}
           onChangeDuration={onChangeDuration}
           isPlaying={isPlaying}
