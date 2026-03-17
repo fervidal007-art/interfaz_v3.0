@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { getActionForStep, formatDuration } from '@/lib/sequenceProfiles'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+  DialogDescription, DialogFooter, DialogClose,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 
 const S = {
   gap:     'clamp(4px, 1.2vh, 12px)',
@@ -239,8 +244,9 @@ function SequenceEditor({
   isPlaying, activeStepIndex, onPlay, onStop,
   maxSteps,
 }) {
-  const [showNewForm, setShowNewForm]       = useState(false)
-  const [newProfileName, setNewProfileName] = useState('')
+  const [showNewForm, setShowNewForm]         = useState(false)
+  const [newProfileName, setNewProfileName]   = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const atLimit = draftSteps.length >= maxSteps
   const selectedProfile = sequences.find((p) => p.id === selectedProfileId)
 
@@ -435,7 +441,7 @@ function SequenceEditor({
         {selectedProfile?.isUserCreated && (
           <button
             type="button"
-            onClick={() => onDeleteProfile(selectedProfileId)}
+            onClick={() => setShowDeleteConfirm(true)}
             disabled={isPlaying}
             title="Eliminar secuencia"
             style={{
@@ -512,6 +518,31 @@ function SequenceEditor({
           </button>
         </div>
       )}
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Eliminar secuencia?</DialogTitle>
+            <DialogDescription>
+              Se eliminará <strong>"{selectedProfile?.name}"</strong> permanentemente.
+              Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline">Cancelar</Button>} />
+            <Button
+              variant="destructive"
+              onClick={() => {
+                onDeleteProfile(selectedProfileId)
+                setShowDeleteConfirm(false)
+              }}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Step list + playback */}
       <div style={{
