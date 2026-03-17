@@ -143,7 +143,7 @@ function ProfileDropdown({ profiles, selectedId, onSelect, disabled }) {
 
 // ─── Step row ─────────────────────────────────────────────────────────────────
 
-function StepRow({ step, index, isCurrent, canMoveUp, canMoveDown, onMove, onRemove, onChangeDuration, disabled, readOnly }) {
+function StepRow({ step, index, isCurrent, onRemove, onChangeDuration, disabled, readOnly }) {
   const action = getActionForStep(step)
   const isEstop = step.type === 'estop'
 
@@ -184,18 +184,21 @@ function StepRow({ step, index, isCurrent, canMoveUp, canMoveDown, onMove, onRem
         {!readOnly ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 1 }}>
             <input
-              type="number" min="0.1" max="30" step="0.1" inputMode="decimal"
-              value={+(step.durationMs / 1000).toFixed(1)}
-              onChange={(e) => {
+              type="text" inputMode="decimal"
+              defaultValue={+(step.durationMs / 1000).toFixed(1)}
+              onBlur={(e) => {
                 const ms = Math.max(100, Math.round((Number(e.target.value) || 0.1) * 1000))
                 onChangeDuration(index, ms)
+                e.target.value = +(ms / 1000).toFixed(1)
               }}
+              onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
               disabled={disabled}
               style={{
-                width: 44, borderRadius: S.rSm, border: '1px solid oklch(0.88 0.01 250)',
+                width: 40, borderRadius: S.rSm, border: '1px solid oklch(0.88 0.01 250)',
                 background: 'white', padding: '1px 4px',
                 fontSize: S.fsLabel, fontWeight: 700, color: 'oklch(0.25 0.02 250)',
                 outline: 'none', opacity: disabled ? 0.6 : 1,
+                WebkitAppearance: 'none', MozAppearance: 'textfield',
               }}
             />
             <span style={{ fontSize: S.fsLabel, color: 'oklch(0.55 0.02 250)' }}>s</span>
@@ -209,24 +212,16 @@ function StepRow({ step, index, isCurrent, canMoveUp, canMoveDown, onMove, onRem
       </div>
 
       {!readOnly && (
-        <div style={{ display: 'flex', gap: 2 }}>
-          {[
-            { label: '↑', onClick: () => onMove(index, -1), dis: disabled || !canMoveUp,  dest: false },
-            { label: '↓', onClick: () => onMove(index, 1),  dis: disabled || !canMoveDown, dest: false },
-            { label: '×', onClick: () => onRemove(index),   dis: disabled,                 dest: true  },
-          ].map(({ label, onClick, dis, dest }) => (
-            <button key={label} type="button" onClick={onClick} disabled={dis} style={{
-              borderRadius: S.rSm,
-              border: `1px solid ${dest ? 'oklch(0.55 0.24 25 / 0.25)' : 'oklch(0.88 0.01 250)'}`,
-              background: dest ? 'oklch(0.55 0.24 25 / 0.06)' : 'white',
-              color: dest ? 'oklch(0.55 0.24 25)' : 'oklch(0.50 0.02 250)',
-              padding: '2px 6px', fontSize: 11, fontWeight: 700,
-              cursor: dis ? 'not-allowed' : 'pointer', opacity: dis ? 0.35 : 1, lineHeight: 1.4,
-            }}>
-              {label}
-            </button>
-          ))}
-        </div>
+        <button type="button" onClick={() => onRemove(index)} disabled={disabled} style={{
+          borderRadius: S.rSm,
+          border: '1px solid oklch(0.55 0.24 25 / 0.25)',
+          background: 'oklch(0.55 0.24 25 / 0.06)',
+          color: 'oklch(0.55 0.24 25)',
+          padding: '2px 7px', fontSize: 13, fontWeight: 700,
+          cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.35 : 1, lineHeight: 1.4,
+        }}>
+          ×
+        </button>
       )}
     </div>
   )
@@ -294,9 +289,7 @@ function SequenceEditor({
             key={`${step.type}-${step.value ?? 'estop'}-${index}`}
             step={step} index={index}
             isCurrent={activeStepIndex === index}
-            canMoveUp={index > 0}
-            canMoveDown={index < draftSteps.length - 1}
-            onMove={onMoveStep} onRemove={onRemoveStep} onChangeDuration={onChangeDuration}
+            onRemove={onRemoveStep} onChangeDuration={onChangeDuration}
             disabled={isPlaying}
             readOnly={!isEditing}
           />
