@@ -8,7 +8,7 @@ import time
 
 from motor_controller import MotorController
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler(__import__('sys').stdout)], encoding='utf-8')
 logger = logging.getLogger(__name__)
 
 SEQUENCES_DIR = Path(__file__).parent.parent / "secuencias"
