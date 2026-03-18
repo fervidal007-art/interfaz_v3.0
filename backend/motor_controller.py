@@ -11,7 +11,7 @@ MOTOR_FIXED_SPEED_ADDR = 0x33
 ADC_BAT_ADDR = 0x00
 
 MOTOR_TYPE_JGB37_520_12V_110RPM = 3
-MOTOR_ENCODER_POLARITY = 1
+MOTOR_ENCODER_POLARITY = 0
 
 # Mecanum wheel speed vectors: [FL, RL, FR, RR]
 # Multiply each element by `speed` to get the per-motor target.
