@@ -11,12 +11,14 @@ MOTOR_FIXED_SPEED_ADDR = 0x33
 ADC_BAT_ADDR = 0x00
 
 MOTOR_TYPE_JGB37_520_12V_110RPM = 3
-MOTOR_ENCODER_POLARITY = 1
+MOTOR_ENCODER_POLARITY = 0  # Default del driver (ver TankDemo.py:35)
 
-# Mecanum wheel speed vectors: [FL, RL, FR, RR]
+# Multiplicador por motor: 1 = normal, -1 = invertido.
+# Cambiar el valor del motor que gire al revés.
+MOTOR_POLARITY = [1, 1, 1, 1]
+
+# Mecanum wheel speed vectors: [FL, FR, RL, RR]
 # Multiply each element by `speed` to get the per-motor target.
-# If a motor turns the wrong way, negate its column here OR change
-# MOTOR_ENCODER_POLARITY above (0 or 1).
 DIRECTION_VECTORS = {
     'n':   [ 1,  1,  1,  1],   # Forward
     's':   [-1, -1, -1, -1],   # Backward
@@ -67,7 +69,7 @@ class MotorController:
         if vec is None:
             logger.warning(f"MotorController: dirección desconocida '{direction}'")
             return
-        speeds = [_clamp_int8(v * speed) for v in vec]
+        speeds = [_clamp_int8(v * speed * p) for v, p in zip(vec, MOTOR_POLARITY)]
         self._write_speeds(speeds)
 
     def read_battery_mv(self) -> int | None:
