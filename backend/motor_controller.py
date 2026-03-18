@@ -17,17 +17,17 @@ MOTOR_ENCODER_POLARITY = 0  # Default del driver (ver TankDemo.py:35)
 # Cambiar el valor del motor que gire al revés.
 MOTOR_POLARITY = [1, 1, 1, 1]
 
-# Mecanum wheel speed vectors: [FL, FR, RL, RR]
-# Multiply each element by `speed` to get the per-motor target.
+# Mecanum wheel speed vectors: [M1=FL, M2=RL, M3=FR, M4=RR]
+# Orden y signos tomados de interfaz_v3.0/2/server.py (versión verificada en hardware).
 DIRECTION_VECTORS = {
     'n':   [ 1,  1,  1,  1],   # Forward
     's':   [-1, -1, -1, -1],   # Backward
-    'e':   [ 1, -1, -1,  1],   # Strafe right
-    'w':   [-1,  1,  1, -1],   # Strafe left
-    'ne':  [ 1,  0,  0,  1],   # Diagonal fwd-right
-    'nw':  [ 0,  1,  1,  0],   # Diagonal fwd-left
-    'se':  [ 0, -1, -1,  0],   # Diagonal rev-right
-    'sw':  [-1,  0,  0, -1],   # Diagonal rev-left
+    'e':   [-1,  1,  1, -1],   # Strafe right
+    'w':   [ 1, -1, -1,  1],   # Strafe left
+    'ne':  [ 0,  1,  1,  0],   # Diagonal fwd-right
+    'nw':  [ 1,  0,  0,  1],   # Diagonal fwd-left
+    'se':  [-1,  0,  0, -1],   # Diagonal rev-right
+    'sw':  [ 0, -1, -1,  0],   # Diagonal rev-left
     'cw':  [ 1, -1,  1, -1],   # Rotate clockwise
     'ccw': [-1,  1, -1,  1],   # Rotate counter-clockwise
 }
@@ -60,9 +60,7 @@ class MotorController:
             logger.info(f"[SIM] velocidades motores: {speeds}")
             return
         try:
-            # smbus2 requiere bytes sin signo (0-255); convertir con complemento a 2
-            raw = [v & 0xFF for v in speeds]
-            self._bus.write_i2c_block_data(MOTOR_ADDR, MOTOR_FIXED_SPEED_ADDR, raw)
+            self._bus.write_i2c_block_data(MOTOR_ADDR, MOTOR_FIXED_SPEED_ADDR, speeds)
         except Exception as e:
             logger.error(f"MotorController: error I2C al escribir: {e}")
 
