@@ -81,6 +81,11 @@ async def websocket_endpoint(ws: WebSocket):
     global current_speed
     await ws.accept()
     logger.info("🟢 Cliente conectado")
+    bat_mv = motor.read_battery_mv()
+    if bat_mv is not None:
+        logger.info(f"🔋 Batería: {bat_mv} mV ({bat_mv / 1000:.2f} V) — I2C OK")
+    else:
+        logger.warning("⚠️  I2C no disponible — modo simulación")
     try:
         while True:
             data = json.loads(await ws.receive_text())

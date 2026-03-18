@@ -8,6 +8,7 @@ MOTOR_ADDR = 0x34
 MOTOR_TYPE_ADDR = 0x14
 MOTOR_ENCODER_POLARITY_ADDR = 0x15
 MOTOR_FIXED_SPEED_ADDR = 0x33
+ADC_BAT_ADDR = 0x00
 
 MOTOR_TYPE_JGB37_520_12V_110RPM = 3
 MOTOR_ENCODER_POLARITY = 0
@@ -65,6 +66,18 @@ class MotorController:
             return
         speeds = [_clamp_int8(v * speed) for v in vec]
         self._write_speeds(speeds)
+
+    def read_battery_mv(self) -> int | None:
+        """Lee el voltaje de batería. Retorna mV o None si I2C no está disponible."""
+        if self._bus is None:
+            logger.info("[SIM] lectura de batería no disponible en modo simulación")
+            return None
+        try:
+            data = self._bus.read_i2c_block_data(MOTOR_ADDR, ADC_BAT_ADDR, 2)
+            return data[0] + (data[1] << 8)
+        except Exception as e:
+            logger.error(f"MotorController: error leyendo batería: {e}")
+            return None
 
     def stop(self):
         self._write_speeds([0, 0, 0, 0])
