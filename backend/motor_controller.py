@@ -15,7 +15,7 @@ MOTOR_ENCODER_POLARITY = 0  # Default del driver (ver TankDemo.py:35)
 
 # Multiplicador por motor: 1 = normal, -1 = invertido.
 # Cambiar el valor del motor que gire al revés.
-MOTOR_POLARITY = [1, 1, 1, 1]
+MOTOR_POLARITY = [1, -1, -1, 1]  # M2 y M3 tienen encoder invertido
 
 # Mecanum wheel speed vectors: [M1=FL, M2=RL, M3=FR, M4=RR]
 # Orden y signos tomados de interfaz_v3.0/2/server.py (versión verificada en hardware).
