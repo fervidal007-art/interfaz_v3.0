@@ -60,7 +60,9 @@ class MotorController:
             logger.info(f"[SIM] velocidades motores: {speeds}")
             return
         try:
-            self._bus.write_i2c_block_data(MOTOR_ADDR, MOTOR_FIXED_SPEED_ADDR, speeds)
+            # smbus2 requiere bytes sin signo (0-255); convertir con complemento a 2
+            raw = [v & 0xFF for v in speeds]
+            self._bus.write_i2c_block_data(MOTOR_ADDR, MOTOR_FIXED_SPEED_ADDR, raw)
         except Exception as e:
             logger.error(f"MotorController: error I2C al escribir: {e}")
 
