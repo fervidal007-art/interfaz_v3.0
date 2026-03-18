@@ -32,7 +32,7 @@ function EStopButton({ onPress, onRelease, disabled }) {
       )}
       style={{ height: 'calc(var(--btn-size) * 1.1)', fontSize: 'calc(var(--btn-size) * 0.3)' }}
     >
-      E STOP
+      STOP
     </button>
   )
 }
@@ -358,12 +358,14 @@ export function Gamepad({ send }) {
         </div>
       </div>
 
-      <div className="px-[3vw] pb-[2vh]">
-        <EStopButton
-          onPress={handleEStop}
-          disabled={isPlaying || (mode === 'sequence' && !isEditing)}
-        />
-      </div>
+      {mode === 'sequence' && (
+        <div className="px-[3vw] pb-[2vh]">
+          <EStopButton
+            onPress={handleEStop}
+            disabled={isPlaying && activeStepRef.current?.type !== 'estop'}
+          />
+        </div>
+      )}
     </div>
   )
 }

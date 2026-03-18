@@ -1,5 +1,30 @@
 import { useState, useCallback, useEffect } from 'react'
 
+// 12V system: 12.6V = 100%, 10.5V = 0%
+function voltageToPercent(v) {
+  if (v == null) return null
+  return Math.round(Math.min(100, Math.max(0, ((v - 10.5) / (12.6 - 10.5)) * 100)))
+}
+
+function BatteryIcon({ percent }) {
+  const fill = percent == null ? 0 : percent / 100
+  const color = percent == null ? '#9ca3af'
+    : percent > 50 ? '#22c55e'
+    : percent > 20 ? '#f59e0b'
+    : '#ef4444'
+
+  return (
+    <svg width="22" height="12" viewBox="0 0 22 12" fill="none">
+      {/* body */}
+      <rect x="0.5" y="0.5" width="18" height="11" rx="2" stroke={color} strokeWidth="1.2" />
+      {/* terminal */}
+      <rect x="19" y="3.5" width="2.5" height="5" rx="1" fill={color} />
+      {/* fill */}
+      <rect x="2" y="2" width={Math.round(15 * fill)} height="8" rx="1" fill={color} />
+    </svg>
+  )
+}
+
 function FullscreenIcon({ isFullscreen }) {
   if (isFullscreen) {
     return (
@@ -21,8 +46,9 @@ function FullscreenIcon({ isFullscreen }) {
   )
 }
 
-export function StatusBar({ connected, speedLabel, onSpeedToggle }) {
+export function StatusBar({ connected, batteryVoltage }) {
   const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement)
+  const percent = voltageToPercent(batteryVoltage)
 
   useEffect(() => {
     const onChange = () => setIsFullscreen(!!document.fullscreenElement)
@@ -40,42 +66,38 @@ export function StatusBar({ connected, speedLabel, onSpeedToggle }) {
 
   return (
     <header className="flex items-center justify-between px-5 h-14 bg-white border-b border-border/50 shadow-[0_1px_6px_rgba(0,0,0,0.04)]">
-      {/* Left: Title + Status */}
-      <div className="flex items-center gap-3">
-        <div className="flex flex-col">
-          <h1 className="text-lg font-bold text-foreground tracking-tight leading-none">
-            Robot <span className="font-light text-primary/70">Control</span>
-          </h1>
-          <div className="flex items-center gap-1.5 mt-1">
-            <span className={`w-2 h-2 rounded-full ring-2 ${connected ? 'bg-green-500 ring-green-500/20' : 'bg-muted-foreground/30 ring-muted-foreground/10'}`} />
-            <span className="text-[11px] text-muted-foreground font-medium tracking-wide uppercase">
-              {connected ? 'Conectado' : 'Desconectado'}
-            </span>
-          </div>
+
+      {/* Left: connection + battery */}
+      <div className="flex items-center gap-4 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <span className={`w-2 h-2 rounded-full ring-2 shrink-0 ${connected ? 'bg-green-500 ring-green-500/20' : 'bg-muted-foreground/30 ring-muted-foreground/10'}`} />
+          <span className="text-[11px] text-muted-foreground font-medium tracking-wide uppercase">
+            {connected ? 'Conectado' : 'Desconectado'}
+          </span>
         </div>
-        <button
-          onClick={toggleFullscreen}
-          className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-90 transition-all duration-100"
-          aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
-        >
-          <FullscreenIcon isFullscreen={isFullscreen} />
-        </button>
-        {onSpeedToggle && (
-          <button
-            onClick={onSpeedToggle}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold tracking-wide text-primary/80 bg-primary/8 hover:bg-primary/15 active:scale-95 transition-all duration-100 select-none"
-            aria-label="Cambiar velocidad"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-            </svg>
-            {speedLabel}
-          </button>
-        )}
+
+        <div className="flex items-center gap-1.5">
+          <BatteryIcon percent={percent} />
+          <span className="text-[11px] font-medium tabular-nums" style={{
+            color: percent == null ? '#9ca3af' : percent > 50 ? '#16a34a' : percent > 20 ? '#d97706' : '#dc2626'
+          }}>
+            {batteryVoltage != null ? `${batteryVoltage.toFixed(1)}V` : '—'}
+          </span>
+          {percent != null && (
+            <span className="text-[10px] text-muted-foreground tabular-nums">{percent}%</span>
+          )}
+        </div>
       </div>
 
-      {/* Right: Logos */}
-      <div className="flex items-center gap-4 h-full py-2">
+      {/* Center: project name */}
+      <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none select-none">
+        <h1 className="text-lg font-bold text-foreground tracking-tight leading-none">
+          Robo<span className="font-light text-primary/70">mesha</span>
+        </h1>
+      </div>
+
+      {/* Right: logos + fullscreen */}
+      <div className="flex items-center gap-3 h-full py-2">
         <img
           src="/logo-iteso.png"
           alt="ITESO, Universidad Jesuita de Guadalajara"
@@ -85,8 +107,15 @@ export function StatusBar({ connected, speedLabel, onSpeedToggle }) {
         <img
           src="/logo-epics.png"
           alt="EPICS in IEEE"
-          className="h-full w-auto object-contain scale-125"
+          className="h-full w-auto object-contain scale-150"
         />
+        <button
+          onClick={toggleFullscreen}
+          className="ml-2 p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-90 transition-all duration-100"
+          aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+        >
+          <FullscreenIcon isFullscreen={isFullscreen} />
+        </button>
       </div>
     </header>
   )

@@ -3,9 +3,11 @@ import { useRef, useState, useEffect, useCallback } from 'react'
 const WS_URL = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:8000/ws`
 const RECONNECT_MS = 2000
 
-export function useWebSocket() {
+export function useWebSocket(onMessage) {
   const wsRef = useRef(null)
   const [connected, setConnected] = useState(false)
+  const onMessageRef = useRef(onMessage)
+  onMessageRef.current = onMessage
 
   useEffect(() => {
     let reconnectTimer = null
@@ -19,6 +21,9 @@ export function useWebSocket() {
         reconnectTimer = window.setTimeout(connect, RECONNECT_MS)
       }
       ws.onerror = () => ws.close()
+      ws.onmessage = (e) => {
+        try { onMessageRef.current?.(JSON.parse(e.data)) } catch {}
+      }
 
       wsRef.current = ws
     }
