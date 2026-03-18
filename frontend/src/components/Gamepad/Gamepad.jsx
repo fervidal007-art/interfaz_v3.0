@@ -19,18 +19,20 @@ async function apiFetch(path, options) {
   return res.json()
 }
 
-function EStopButton({ onPress, onRelease }) {
-  const { isPressed, ref } = useTouch({ onPress, onRelease })
+function EStopButton({ onPress, onRelease, disabled }) {
+  const { isPressed, ref } = useTouch({ onPress, onRelease, disabled })
   return (
     <button
       ref={ref}
+      disabled={disabled}
       className={cn(
         'w-full rounded-2xl border-2 border-destructive bg-destructive text-destructive-foreground font-bold tracking-widest uppercase shadow-lg transition-all duration-100 select-none',
-        isPressed && 'scale-[0.97] shadow-inner brightness-90'
+        isPressed && 'scale-[0.97] shadow-inner brightness-90',
+        disabled && 'opacity-40 cursor-not-allowed'
       )}
       style={{ height: 'calc(var(--btn-size) * 1.1)', fontSize: 'calc(var(--btn-size) * 0.3)' }}
     >
-      E-STOP
+      E STOP
     </button>
   )
 }
@@ -228,6 +230,13 @@ export function Gamepad({ send }) {
   }
 
   const handleEStop = () => {
+    if (mode === 'sequence' && isEditing && selectedProfileId && !isPlaying) {
+      setDraftSteps((current) => {
+        if (current.length >= MAX_STEPS) return current
+        return [...current, { type: 'estop', durationMs: makeDurationMs(durationInput) }]
+      })
+      return
+    }
     if (isPlaying) cancelSequencePlayback({ releaseActive: activeStepRef.current?.type !== 'estop' })
     send({ type: 'estop', pressed: true })
   }
@@ -350,7 +359,10 @@ export function Gamepad({ send }) {
       </div>
 
       <div className="px-[3vw] pb-[2vh]">
-        <EStopButton onPress={handleEStop} />
+        <EStopButton
+          onPress={handleEStop}
+          disabled={isPlaying || (mode === 'sequence' && !isEditing)}
+        />
       </div>
     </div>
   )

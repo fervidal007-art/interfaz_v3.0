@@ -17,7 +17,7 @@ const ROTATION_ACTIONS = [
 const ESTOP_ACTION = {
   key: 'estop',
   type: 'estop',
-  label: 'E-STOP',
+  label: 'E STOP',
   shortLabel: 'STOP',
   group: 'safety',
 }

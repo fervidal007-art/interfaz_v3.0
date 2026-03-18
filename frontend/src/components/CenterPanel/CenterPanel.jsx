@@ -299,7 +299,7 @@ function SequenceEditor({
           background: 'white', padding: S.pad,
           textAlign: 'center', fontSize: S.fsXs, color: 'oklch(0.60 0.02 250)',
         }}>
-          {isEditing ? 'Toca el DPad o los giros para agregar pasos' : 'Sin pasos'}
+          {isEditing ? 'Toca el DPad, los giros o E STOP para agregar pasos' : 'Sin pasos'}
         </div>
       ) : (
         draftSteps.map((step, index) => (
@@ -369,7 +369,7 @@ function SequenceEditor({
           fontSize: S.fsLabel, color: atLimit ? 'oklch(0.55 0.24 25)' : 'oklch(0.55 0.02 250)',
           margin: 0, textAlign: 'center', fontWeight: atLimit ? 600 : 400,
         }}>
-          {atLimit ? `Límite de ${maxSteps} pasos alcanzado` : 'Toca el DPad o los giros para agregar pasos'}
+          {atLimit ? `Límite de ${maxSteps} pasos alcanzado` : 'Toca el DPad, los giros o E STOP para agregar pasos'}
         </p>
 
         {/* Step list */}
