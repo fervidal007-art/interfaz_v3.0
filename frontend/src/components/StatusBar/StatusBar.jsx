@@ -21,7 +21,7 @@ function FullscreenIcon({ isFullscreen }) {
   )
 }
 
-export function StatusBar({ connected }) {
+export function StatusBar({ connected, speedLabel, onSpeedToggle }) {
   const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement)
 
   useEffect(() => {
@@ -60,6 +60,18 @@ export function StatusBar({ connected }) {
         >
           <FullscreenIcon isFullscreen={isFullscreen} />
         </button>
+        {onSpeedToggle && (
+          <button
+            onClick={onSpeedToggle}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold tracking-wide text-primary/80 bg-primary/8 hover:bg-primary/15 active:scale-95 transition-all duration-100 select-none"
+            aria-label="Cambiar velocidad"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
+            {speedLabel}
+          </button>
+        )}
       </div>
 
       {/* Right: Logos */}

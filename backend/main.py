@@ -1,12 +1,29 @@
+import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 import json
 import time
 
+from motor_controller import MotorController
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 SEQUENCES_DIR = Path(__file__).parent.parent / "secuencias"
 
-app = FastAPI()
+motor = MotorController()
+current_speed: int = 35  # default: Normal
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    motor.close()
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -61,19 +78,45 @@ async def delete_sequence(seq_id: str):
 
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
+    global current_speed
     await ws.accept()
-    print("🟢 Cliente conectado")
+    logger.info("🟢 Cliente conectado")
     try:
         while True:
             data = json.loads(await ws.receive_text())
             cmd = data.get("type", "?")
-            direction = data.get("direction", "")
-            state = "ON" if data.get("pressed") else "OFF"
 
-            if cmd == "estop":
-                print(f"🔴 E-STOP | {state}")
+            if cmd == "speed":
+                current_speed = int(data.get("value", current_speed))
+                logger.info(f"⚡ SPEED    | {current_speed}")
+
+            elif cmd == "direction":
+                direction = data.get("direction", "")
+                pressed = data.get("pressed", False)
+                state = "ON" if pressed else "OFF"
+                logger.info(f"🎮 DIRECTION | {direction:>3} | {state}")
+                if pressed:
+                    motor.set_direction(direction, current_speed)
+                else:
+                    motor.stop()
+
+            elif cmd == "rotate":
+                direction = data.get("direction", "")
+                pressed = data.get("pressed", False)
+                state = "ON" if pressed else "OFF"
+                logger.info(f"🔄 ROTATE   | {direction:>3} | {state}")
+                if pressed:
+                    motor.set_direction(direction, current_speed)
+                else:
+                    motor.stop()
+
+            elif cmd == "estop":
+                logger.info("🔴 E-STOP")
+                motor.estop()
+
             else:
-                print(f"🎮 {cmd.upper():>8} | {direction:>3} | {state}")
+                logger.info(f"❓ {cmd.upper():>8} | {data}")
 
     except WebSocketDisconnect:
-        print("⚪ Cliente desconectado")
+        motor.stop()
+        logger.info("⚪ Cliente desconectado — motores parados")
