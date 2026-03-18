@@ -39,7 +39,10 @@ class MotorController:
     def __init__(self):
         self._bus = None
         try:
-            import smbus
+            try:
+                import smbus2 as smbus
+            except ImportError:
+                import smbus
             import time
             self._bus = smbus.SMBus(I2C_BUS)
             self._bus.write_byte_data(MOTOR_ADDR, MOTOR_TYPE_ADDR, MOTOR_TYPE_JGB37_520_12V_110RPM)
