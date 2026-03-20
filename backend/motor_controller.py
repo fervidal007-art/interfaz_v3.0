@@ -1,4 +1,6 @@
 import logging
+import math
+import os
 import struct
 import threading
 import time
@@ -11,14 +13,16 @@ I2C_BUS = 1
 MOTOR_ADDR = 0x34
 MOTOR_TYPE_ADDR = 0x14
 MOTOR_ENCODER_POLARITY_ADDR = 0x15
+MOTOR_FIXED_PWM_ADDR = 0x1F
 MOTOR_FIXED_SPEED_ADDR = 0x33
 MOTOR_ENCODER_TOTAL_ADDR = 0x3C
 ADC_BAT_ADDR = 0x00
 
 MOTOR_TYPE_JGB37_520_12V_110RPM = 3
 MOTOR_ENCODER_POLARITY = 0  # Default del driver (ver TankDemo.py:35)
-RAMP_STEP = 8
-RAMP_INTERVAL_S = 0.03
+CONTROL_MODE = os.getenv("MOTOR_CONTROL_MODE", "pwm").strip().lower()
+FILTER_TIME_CONSTANT_S = float(os.getenv("MOTOR_FILTER_TAU_S", "0.35"))
+RAMP_INTERVAL_S = 0.015
 MOTOR_STAGGER_ORDER = (0, 2, 1, 3)
 
 # Multiplicador por motor: 1 = normal, -1 = invertido.
@@ -45,27 +49,32 @@ def _clamp_int8(value: float) -> int:
     return max(-100, min(100, int(round(value))))
 
 
+def _normalize_control_mode(mode: str) -> str:
+    return "speed" if mode == "speed" else "pwm"
+
+
 class MotorController:
     def __init__(self):
         self._bus = None
+        self._control_mode = _normalize_control_mode(CONTROL_MODE)
         self._lock = threading.Lock()
         self._stop_event = threading.Event()
         self._worker = None
         self._target_speeds = [0, 0, 0, 0]
-        self._current_speeds = [0, 0, 0, 0]
+        self._current_speeds = [0.0, 0.0, 0.0, 0.0]
         self._last_written_speeds = None
         self._stagger_index = 0
+        self._last_update_ts = time.monotonic()
         try:
             try:
                 import smbus2 as smbus
             except ImportError:
                 import smbus
-            import time
             self._bus = smbus.SMBus(I2C_BUS)
             self._bus.write_byte_data(MOTOR_ADDR, MOTOR_TYPE_ADDR, MOTOR_TYPE_JGB37_520_12V_110RPM)
             time.sleep(0.5)
             self._bus.write_byte_data(MOTOR_ADDR, MOTOR_ENCODER_POLARITY_ADDR, MOTOR_ENCODER_POLARITY)
-            logger.info("MotorController: I2C inicializado correctamente")
+            logger.info(f"MotorController: I2C inicializado correctamente ({self._control_mode})")
         except Exception as e:
             self._bus = None
             logger.warning(f"MotorController: I2C no disponible, modo simulación ({e})")
@@ -82,7 +91,8 @@ class MotorController:
             logger.debug(f"[SIM] velocidades motores: {normalized}")
             return
         try:
-            self._bus.write_i2c_block_data(MOTOR_ADDR, MOTOR_FIXED_SPEED_ADDR, normalized)
+            register = MOTOR_FIXED_SPEED_ADDR if self._control_mode == "speed" else MOTOR_FIXED_PWM_ADDR
+            self._bus.write_i2c_block_data(MOTOR_ADDR, register, normalized)
         except Exception as e:
             logger.error(f"MotorController: error I2C al escribir: {e}")
 
@@ -92,6 +102,11 @@ class MotorController:
 
     def _ramp_loop(self):
         while not self._stop_event.is_set():
+            now = time.monotonic()
+            dt = max(now - self._last_update_ts, RAMP_INTERVAL_S)
+            self._last_update_ts = now
+            alpha = 1.0 if FILTER_TIME_CONSTANT_S <= 0 else 1.0 - math.exp(-dt / FILTER_TIME_CONSTANT_S)
+
             with self._lock:
                 target = self._target_speeds[:]
                 current = self._current_speeds[:]
@@ -100,10 +115,11 @@ class MotorController:
 
                 delta = target[motor_index] - current[motor_index]
                 if delta != 0:
-                    step = max(-RAMP_STEP, min(RAMP_STEP, delta))
-                    current[motor_index] += step
+                    current[motor_index] += delta * alpha
+                    if abs(target[motor_index] - current[motor_index]) < 0.5:
+                        current[motor_index] = float(target[motor_index])
                     self._current_speeds = current
-                write = current
+                write = [_clamp_int8(value) for value in current]
 
             self._write_speeds(write)
             self._stop_event.wait(RAMP_INTERVAL_S)
