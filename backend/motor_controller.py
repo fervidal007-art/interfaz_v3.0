@@ -21,9 +21,11 @@ ADC_BAT_ADDR = 0x00
 MOTOR_TYPE_JGB37_520_12V_110RPM = 3
 MOTOR_ENCODER_POLARITY = 0  # Default del driver (ver TankDemo.py:35)
 CONTROL_MODE = os.getenv("MOTOR_CONTROL_MODE", "pwm").strip().lower()
-FILTER_TIME_CONSTANT_S = float(os.getenv("MOTOR_FILTER_TAU_S", "0.35"))
+FILTER_TIME_CONSTANT_S = float(os.getenv("MOTOR_FILTER_TAU_S", "0.18"))
 RAMP_INTERVAL_S = 0.015
-MOTOR_STAGGER_ORDER = (0, 2, 1, 3)
+PWM_UI_REFERENCE = float(os.getenv("MOTOR_PWM_UI_REFERENCE", "50"))
+PWM_STATIC_FRICTION_OFFSET = float(os.getenv("MOTOR_PWM_STATIC_OFFSET", "40"))
+PWM_OUTPUT_LIMIT = float(os.getenv("MOTOR_PWM_LIMIT", "85"))
 
 # Multiplicador por motor: 1 = normal, -1 = invertido.
 # Cambiar el valor del motor que gire al revés.
@@ -63,7 +65,6 @@ class MotorController:
         self._target_speeds = [0, 0, 0, 0]
         self._current_speeds = [0.0, 0.0, 0.0, 0.0]
         self._last_written_speeds = None
-        self._stagger_index = 0
         self._last_update_ts = time.monotonic()
         try:
             try:
@@ -100,6 +101,16 @@ class MotorController:
         with self._lock:
             self._target_speeds = [int(v) for v in speeds]
 
+    def _map_speed_command(self, speed: int) -> int:
+        magnitude = abs(int(speed))
+        if self._control_mode != "pwm" or magnitude == 0:
+            return _clamp_int8(speed)
+
+        reference = max(PWM_UI_REFERENCE, 1.0)
+        usable_range = max(PWM_OUTPUT_LIMIT - PWM_STATIC_FRICTION_OFFSET, 0.0)
+        scaled = PWM_STATIC_FRICTION_OFFSET + min(magnitude, reference) / reference * usable_range
+        return _clamp_int8(math.copysign(scaled, speed))
+
     def _ramp_loop(self):
         while not self._stop_event.is_set():
             now = time.monotonic()
@@ -110,15 +121,14 @@ class MotorController:
             with self._lock:
                 target = self._target_speeds[:]
                 current = self._current_speeds[:]
-                motor_index = MOTOR_STAGGER_ORDER[self._stagger_index % len(MOTOR_STAGGER_ORDER)]
-                self._stagger_index += 1
-
-                delta = target[motor_index] - current[motor_index]
-                if delta != 0:
+                for motor_index in range(len(current)):
+                    delta = target[motor_index] - current[motor_index]
+                    if delta == 0:
+                        continue
                     current[motor_index] += delta * alpha
                     if abs(target[motor_index] - current[motor_index]) < 0.5:
                         current[motor_index] = float(target[motor_index])
-                    self._current_speeds = current
+                self._current_speeds = current
                 write = [_clamp_int8(value) for value in current]
 
             self._write_speeds(write)
@@ -129,7 +139,8 @@ class MotorController:
         if vec is None:
             logger.warning(f"MotorController: dirección desconocida '{direction}'")
             return
-        speeds = [_clamp_int8(v * speed * p) for v, p in zip(vec, MOTOR_POLARITY)]
+        command = self._map_speed_command(speed)
+        speeds = [_clamp_int8(v * command * p) for v, p in zip(vec, MOTOR_POLARITY)]
         self._set_target_speeds(speeds)
 
     def read_battery_mv(self) -> Optional[int]:
