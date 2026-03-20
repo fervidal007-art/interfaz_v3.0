@@ -410,7 +410,7 @@ export function Gamepad({ send }) {
         <div className="px-[3vw] pb-[2vh]">
           <EStopButton
             onPress={handleEStop}
-            disabled={isPlaying && activeStepRef.current?.type !== 'estop'}
+            disabled
           />
         </div>
       )}
