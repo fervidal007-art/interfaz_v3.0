@@ -368,9 +368,8 @@ export function Gamepad({ send }) {
         className="flex-1 min-h-0 grid px-[3vw] py-[1.8vh]"
         style={{
           gridTemplateColumns: 'minmax(0, 1fr) var(--center-panel-width) minmax(0, 1fr)',
-          gridTemplateRows: mode === 'sequence' ? 'minmax(0, 1fr) auto' : 'minmax(0, 1fr)',
+          gridTemplateRows: 'minmax(0, 1fr)',
           columnGap: 'clamp(24px, 4vw, 72px)',
-          rowGap: mode === 'sequence' ? 'clamp(10px, 1.6vh, 18px)' : '0px',
         }}
       >
         <div className="flex items-center justify-start" style={{ gridColumn: 1, gridRow: 1 }}>
@@ -407,21 +406,18 @@ export function Gamepad({ send }) {
           />
         </div>
 
-        <div className="flex items-center justify-end" style={{ gridColumn: 3, gridRow: 1 }}>
+        <div
+          className="flex flex-col items-end justify-center"
+          style={{ gridColumn: 3, gridRow: 1, gap: mode === 'sequence' ? 'clamp(10px, 2vh, 20px)' : '0' }}
+        >
           <RotationControl onRotate={handleRotate} disabled={isPlaying || (mode === 'sequence' && !isEditing)} />
-        </div>
-
-        {mode === 'sequence' && (
-          <div
-            className="flex justify-end"
-            style={{ gridColumn: 3, gridRow: 2, paddingTop: 'clamp(2px, 0.6vh, 8px)' }}
-          >
+          {mode === 'sequence' && (
             <EStopButton
               onPress={handleEStop}
               disabled={isEditing || !isPlaying}
             />
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )

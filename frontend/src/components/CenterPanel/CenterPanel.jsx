@@ -291,7 +291,6 @@ function SequenceEditor({
   const stepList = (
     <div ref={listRef} style={{
       display: 'flex', flexDirection: 'column', gap: S.gapSm,
-      maxHeight: 'clamp(60px, 26vh, 220px)', overflowY: 'auto', paddingRight: 2,
     }}>
       {draftSteps.length === 0 ? (
         <div style={{
@@ -629,7 +628,7 @@ export function CenterPanel({
   return (
     <section style={{
       width: 'var(--center-panel-width)',
-      maxHeight: '100%',
+      maxHeight: 'calc(100dvh - clamp(90px, 14vh, 160px))',
       overflowY: 'auto', overflowX: 'hidden',
       borderRadius: 'clamp(16px, 2.8vh, 28px)',
       border: '1px solid oklch(0.90 0.01 250)',

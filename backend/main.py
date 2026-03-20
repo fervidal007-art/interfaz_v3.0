@@ -2,6 +2,7 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
 from pathlib import Path
 import json
 import time
@@ -12,6 +13,7 @@ logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler(__import
 logger = logging.getLogger(__name__)
 
 SEQUENCES_DIR = Path(__file__).parent.parent / "secuencias"
+FRONTEND_DIST_DIR = Path(__file__).parent.parent / "frontend" / "dist"
 
 motor = MotorController()
 current_speed: int = 35  # default: Normal
@@ -126,3 +128,39 @@ async def websocket_endpoint(ws: WebSocket):
     except WebSocketDisconnect:
         motor.stop()
         logger.info("⚪ Cliente desconectado — motores parados")
+
+
+@app.get("/health")
+async def healthcheck():
+    frontend_ready = (FRONTEND_DIST_DIR / "index.html").exists()
+    return JSONResponse(
+        {
+            "ok": True,
+            "frontendReady": frontend_ready,
+            "frontendDist": str(FRONTEND_DIST_DIR),
+        }
+    )
+
+
+@app.get("/{requested_path:path}", include_in_schema=False)
+async def serve_frontend(requested_path: str):
+    index_file = FRONTEND_DIST_DIR / "index.html"
+    if not index_file.exists():
+        return JSONResponse(
+            {
+                "ok": False,
+                "error": "Frontend build no encontrado",
+                "expected": str(index_file),
+            },
+            status_code=503,
+        )
+
+    cleaned_path = requested_path.strip("/")
+    if cleaned_path:
+        candidate = FRONTEND_DIST_DIR / cleaned_path
+        if candidate.is_file():
+            return FileResponse(candidate)
+        if "." in Path(cleaned_path).name:
+            return JSONResponse({"ok": False, "error": "Archivo no encontrado"}, status_code=404)
+
+    return FileResponse(index_file)
