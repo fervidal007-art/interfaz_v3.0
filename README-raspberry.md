@@ -5,7 +5,6 @@
 - Revisa dependencias del frontend y backend.
 - Instala solo cuando cambian `package.json`, `pnpm-lock.yaml` o `requirements.txt`.
 - Reconstruye el frontend en modo `build`.
-- Levanta el access point `ROBOMESHA`.
 - Arranca FastAPI sirviendo tambien el frontend compilado.
 - Instala hooks para que despues de `git pull` se ejecute el refresh automaticamente.
 - Instala un servicio `systemd` para que todo arranque con la Raspberry Pi.
@@ -25,6 +24,12 @@ La app quedara disponible en `http://<ip-de-la-raspberry>:8000`.
 chmod +x scripts/*.sh
 sudo ./scripts/install_service.sh
 sudo systemctl start robomesha.service
+```
+
+## Desinstalar el servicio
+
+```bash
+sudo ./scripts/uninstall_service.sh
 ```
 
 ## Logs

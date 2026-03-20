@@ -9,7 +9,6 @@ VENV_DIR="$ROOT_DIR/.venv-robomesha"
 HOST="${HOST:-0.0.0.0}"
 PORT="${PORT:-8000}"
 SKIP_UPDATE="${SKIP_UPDATE:-0}"
-SKIP_AP="${SKIP_AP:-0}"
 
 log() {
   printf '[stack] %s\n' "$*"
@@ -24,10 +23,6 @@ cleanup() {
 }
 
 trap cleanup EXIT INT TERM
-
-if [[ "$SKIP_AP" != "1" ]]; then
-  "$ROOT_DIR/scripts/ensure_ap.sh"
-fi
 
 if [[ "$SKIP_UPDATE" != "1" ]]; then
   "$ROOT_DIR/scripts/update_runtime.sh"
