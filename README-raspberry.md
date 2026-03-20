@@ -32,6 +32,8 @@ El servicio arranca usando el ultimo `build` ya generado. Si haces cambios o un 
 ./scripts/update_runtime.sh
 ```
 
+El servicio queda instalado con tu usuario actual, no como `root`, para evitar problemas de permisos en `frontend/dist` y `.venv-robomesha`.
+
 ## Desinstalar el servicio
 
 ```bash
