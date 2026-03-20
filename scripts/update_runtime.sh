@@ -43,6 +43,11 @@ ensure_cmd() {
   fi
 }
 
+python_module_missing() {
+  local module_name="$1"
+  "$VENV_DIR/bin/python" -c "import $module_name" >/dev/null 2>&1
+}
+
 ensure_cmd python3
 ensure_cmd pnpm
 
@@ -59,6 +64,12 @@ fi
 
 if [[ ! -d "$VENV_DIR" ]]; then
   backend_install_needed=1
+fi
+
+if [[ -x "$VENV_DIR/bin/python" ]]; then
+  if ! python_module_missing uvicorn || ! python_module_missing fastapi; then
+    backend_install_needed=1
+  fi
 fi
 
 if needs_refresh "$FRONTEND_MANIFEST" "$STATE_DIR/frontend-package.sha256"; then
