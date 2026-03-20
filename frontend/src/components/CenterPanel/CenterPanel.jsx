@@ -253,7 +253,7 @@ function SequenceEditor({
   onCreateProfile, onDeleteProfile, onClearDraft,
   durationInput, onDurationInputChange, onAddEstopStep,
   draftSteps, onReorderSteps, onRemoveStep, onChangeDuration,
-  isPlaying, activeStepIndex, onPlay, onStop,
+  isPlaying, activeStepIndex, onPlay,
   maxSteps,
 }) {
   const [showNewForm, setShowNewForm]             = useState(false)
@@ -362,6 +362,25 @@ function SequenceEditor({
             }}
           />
           <span style={{ fontSize: S.fsXs, color: 'oklch(0.55 0.02 250)', flexShrink: 0 }}>s</span>
+          <button
+            type="button"
+            onClick={onAddEstopStep}
+            disabled={isPlaying || atLimit}
+            style={{
+              flexShrink: 0,
+              borderRadius: S.r,
+              border: '1px solid oklch(0.55 0.24 25 / 0.25)',
+              background: 'oklch(0.55 0.24 25 / 0.06)',
+              color: 'oklch(0.55 0.24 25)',
+              padding: `${S.padSm} ${S.pad}`,
+              fontSize: S.fsXs,
+              fontWeight: 700,
+              cursor: (isPlaying || atLimit) ? 'not-allowed' : 'pointer',
+              opacity: (isPlaying || atLimit) ? 0.45 : 1,
+            }}
+          >
+            E STOP
+          </button>
         </div>
 
         {/* Hint */}
@@ -369,7 +388,7 @@ function SequenceEditor({
           fontSize: S.fsLabel, color: atLimit ? 'oklch(0.55 0.24 25)' : 'oklch(0.55 0.02 250)',
           margin: 0, textAlign: 'center', fontWeight: atLimit ? 600 : 400,
         }}>
-          {atLimit ? `Límite de ${maxSteps} pasos alcanzado` : 'Toca el DPad, los giros o E STOP para agregar pasos'}
+          {atLimit ? `Límite de ${maxSteps} pasos alcanzado` : 'Toca el DPad o los giros para agregar pasos'}
         </p>
 
         {/* Step list */}
@@ -585,16 +604,6 @@ function SequenceEditor({
               }}>
               {isPlaying ? 'Reproduciendo…' : 'Reproducir'}
             </button>
-            <button type="button" onClick={onStop} disabled={!isPlaying}
-              style={{
-                borderRadius: S.r, border: '1px solid oklch(0.88 0.01 250)',
-                background: 'white', color: 'oklch(0.25 0.03 250)',
-                padding: `${S.padSm} ${S.pad}`, fontSize: S.fsXs, fontWeight: 700,
-                cursor: !isPlaying ? 'not-allowed' : 'pointer',
-                opacity: !isPlaying ? 0.55 : 1, flexShrink: 0,
-              }}>
-              Detener
-            </button>
           </div>
         </div>
         {stepList}
@@ -614,7 +623,7 @@ export function CenterPanel({
   onCreateProfile, onDeleteProfile, onClearDraft,
   durationInput, onDurationInputChange, onAddEstopStep,
   draftSteps, onReorderSteps, onRemoveStep, onChangeDuration,
-  isPlaying, activeStepIndex, onPlay, onStop,
+  isPlaying, activeStepIndex, onPlay,
   maxSteps,
 }) {
   return (
@@ -662,7 +671,6 @@ export function CenterPanel({
           isPlaying={isPlaying}
           activeStepIndex={activeStepIndex}
           onPlay={onPlay}
-          onStop={onStop}
           maxSteps={maxSteps}
         />
       )}

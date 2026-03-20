@@ -35,7 +35,11 @@ function EStopButton({ onPress, onRelease, disabled }) {
         isPressed && 'scale-[0.97] shadow-inner brightness-90',
         disabled && 'opacity-40 cursor-not-allowed'
       )}
-      style={{ height: 'calc(var(--btn-size) * 1.1)', fontSize: 'calc(var(--btn-size) * 0.3)' }}
+      style={{
+        width: 'min(100%, clamp(240px, 36vw, 420px))',
+        height: 'clamp(48px, 6.5vh, 64px)',
+        fontSize: 'clamp(1rem, 2.6vh, 1.6rem)',
+      }}
     >
       STOP
     </button>
@@ -325,8 +329,6 @@ export function Gamepad({ send }) {
     playSequence(draftSteps, 0)
   }
 
-  const handleStopSequence = () => cancelSequencePlayback()
-
   const handleSpeedChange = (nextSpeed) => {
     setSelectedSpeed(nextSpeed)
     send({ type: 'speed', value: nextSpeed })
@@ -363,7 +365,10 @@ export function Gamepad({ send }) {
       </div>
 
       <div
-        className="flex-1 min-h-0 grid items-center px-[3vw] py-[1.8vh]"
+        className={cn(
+          'flex-1 min-h-0 grid px-[3vw] py-[1.8vh]',
+          mode === 'sequence' ? 'items-start' : 'items-center'
+        )}
         style={{ gridTemplateColumns: 'auto minmax(0, 1fr) auto', columnGap: 'clamp(12px, 2vw, 26px)' }}
       >
         <div className="justify-self-start">
@@ -396,7 +401,6 @@ export function Gamepad({ send }) {
             isPlaying={isPlaying}
             activeStepIndex={activeStepIndex}
             onPlay={handlePlaySequence}
-            onStop={handleStopSequence}
             maxSteps={MAX_STEPS}
           />
         </div>
@@ -407,10 +411,10 @@ export function Gamepad({ send }) {
       </div>
 
       {mode === 'sequence' && (
-        <div className="px-[3vw] pb-[2vh]">
+        <div className="flex justify-center px-[3vw] pb-[1.8vh] pt-[0.8vh]">
           <EStopButton
             onPress={handleEStop}
-            disabled
+            disabled={isEditing || !isPlaying}
           />
         </div>
       )}
