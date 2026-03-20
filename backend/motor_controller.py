@@ -40,27 +40,6 @@ DIRECTION_VECTORS = {
     'ccw': [-1,  1, -1,  1],   # Rotate counter-clockwise
 }
 
-MIRRORED_DIRECTION_MAP = {
-    'e': 'w',
-    'w': 'e',
-    'ne': 'nw',
-    'nw': 'ne',
-    'se': 'sw',
-    'sw': 'se',
-    'cw': 'ccw',
-    'ccw': 'cw',
-}
-
-FRONT_BACK_DIRECTION_MAP = {
-    'n': 's',
-    's': 'n',
-    'ne': 'se',
-    'se': 'ne',
-    'nw': 'sw',
-    'sw': 'nw',
-}
-
-
 def _clamp_int8(value: float) -> int:
     return max(-100, min(100, int(round(value))))
 
