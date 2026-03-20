@@ -1,5 +1,11 @@
 import logging
+<<<<<<< Updated upstream
 import struct
+=======
+import threading
+import time
+from typing import List, Optional
+>>>>>>> Stashed changes
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +20,9 @@ ADC_BAT_ADDR = 0x00
 
 MOTOR_TYPE_JGB37_520_12V_110RPM = 3
 MOTOR_ENCODER_POLARITY = 0  # Default del driver (ver TankDemo.py:35)
+RAMP_STEP = 8
+RAMP_INTERVAL_S = 0.03
+MOTOR_STAGGER_ORDER = (0, 2, 1, 3)
 
 # Multiplicador por motor: 1 = normal, -1 = invertido.
 # Cambiar el valor del motor que gire al revés.
@@ -42,6 +51,13 @@ def _clamp_int8(value: float) -> int:
 class MotorController:
     def __init__(self):
         self._bus = None
+        self._lock = threading.Lock()
+        self._stop_event = threading.Event()
+        self._worker = None
+        self._target_speeds = [0, 0, 0, 0]
+        self._current_speeds = [0, 0, 0, 0]
+        self._last_written_speeds = None
+        self._stagger_index = 0
         try:
             try:
                 import smbus2 as smbus
@@ -57,14 +73,43 @@ class MotorController:
             self._bus = None
             logger.warning(f"MotorController: I2C no disponible, modo simulación ({e})")
 
-    def _write_speeds(self, speeds: list[int]):
+        self._worker = threading.Thread(target=self._ramp_loop, daemon=True)
+        self._worker.start()
+
+    def _write_speeds(self, speeds: List[int]):
+        normalized = [int(v) for v in speeds]
+        if self._last_written_speeds == normalized:
+            return
+        self._last_written_speeds = normalized
         if self._bus is None:
-            logger.info(f"[SIM] velocidades motores: {speeds}")
+            logger.debug(f"[SIM] velocidades motores: {normalized}")
             return
         try:
-            self._bus.write_i2c_block_data(MOTOR_ADDR, MOTOR_FIXED_SPEED_ADDR, speeds)
+            self._bus.write_i2c_block_data(MOTOR_ADDR, MOTOR_FIXED_SPEED_ADDR, normalized)
         except Exception as e:
             logger.error(f"MotorController: error I2C al escribir: {e}")
+
+    def _set_target_speeds(self, speeds: List[int]):
+        with self._lock:
+            self._target_speeds = [int(v) for v in speeds]
+
+    def _ramp_loop(self):
+        while not self._stop_event.is_set():
+            with self._lock:
+                target = self._target_speeds[:]
+                current = self._current_speeds[:]
+                motor_index = MOTOR_STAGGER_ORDER[self._stagger_index % len(MOTOR_STAGGER_ORDER)]
+                self._stagger_index += 1
+
+                delta = target[motor_index] - current[motor_index]
+                if delta != 0:
+                    step = max(-RAMP_STEP, min(RAMP_STEP, delta))
+                    current[motor_index] += step
+                    self._current_speeds = current
+                write = current
+
+            self._write_speeds(write)
+            self._stop_event.wait(RAMP_INTERVAL_S)
 
     def set_direction(self, direction: str, speed: int):
         vec = DIRECTION_VECTORS.get(direction)
@@ -72,9 +117,9 @@ class MotorController:
             logger.warning(f"MotorController: dirección desconocida '{direction}'")
             return
         speeds = [_clamp_int8(v * speed * p) for v, p in zip(vec, MOTOR_POLARITY)]
-        self._write_speeds(speeds)
+        self._set_target_speeds(speeds)
 
-    def read_battery_mv(self) -> int | None:
+    def read_battery_mv(self) -> Optional[int]:
         """Lee el voltaje de batería. Retorna mV o None si I2C no está disponible."""
         if self._bus is None:
             logger.info("[SIM] lectura de batería no disponible en modo simulación")
@@ -99,15 +144,23 @@ class MotorController:
             return None
 
     def stop(self):
-        self._write_speeds([0, 0, 0, 0])
+        self._set_target_speeds([0, 0, 0, 0])
 
     def estop(self):
-        self.stop()
+        with self._lock:
+            self._target_speeds = [0, 0, 0, 0]
+            self._current_speeds = [0, 0, 0, 0]
+        self._write_speeds([0, 0, 0, 0])
 
     def close(self):
+        self._stop_event.set()
+        if self._worker is not None:
+            self._worker.join(timeout=0.5)
+            self._worker = None
+
         if self._bus is not None:
             try:
-                self.stop()
+                self.estop()
                 self._bus.close()
             except Exception:
                 pass
