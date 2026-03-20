@@ -358,7 +358,7 @@ export function Gamepad({ send }) {
         <SpeedSelector
           value={selectedSpeed}
           onChange={handleSpeedChange}
-          disabled={isPlaying}
+          disabled={isPlaying || mode === 'sequence'}
         />
       </div>
 

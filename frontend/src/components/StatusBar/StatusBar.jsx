@@ -88,13 +88,7 @@ export function StatusBar({ connected, batteryVoltage }) {
         </div>
       </div>
 
-      <div className="pointer-events-none select-none justify-self-center">
-        <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight leading-none">
-          Robo<span className="font-light text-primary/70">mesha</span>
-        </h1>
-      </div>
-
-      <div className="flex items-center justify-self-end gap-4 h-full py-2">
+      <div className="flex items-center justify-self-center gap-4 h-full py-2">
         <img
           src="/logo-iteso.png"
           alt="ITESO, Universidad Jesuita de Guadalajara"
@@ -106,9 +100,17 @@ export function StatusBar({ connected, batteryVoltage }) {
           alt="EPICS in IEEE"
           className="h-12 md:h-14 w-auto object-contain shrink-0"
         />
+      </div>
+
+      <div className="flex items-center justify-self-end gap-4">
+        <div className="pointer-events-none select-none">
+          <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight leading-none">
+            Robo<span className="font-light text-primary/70">mesha</span>
+          </h1>
+        </div>
         <button
           onClick={toggleFullscreen}
-          className="ml-1 p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-90 transition-all duration-100"
+          className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-90 transition-all duration-100"
           aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
         >
           <FullscreenIcon isFullscreen={isFullscreen} />
