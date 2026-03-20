@@ -20,7 +20,7 @@ ADC_BAT_ADDR = 0x00
 
 MOTOR_TYPE_JGB37_520_12V_110RPM = 3
 MOTOR_ENCODER_POLARITY = 0  # Default del driver (ver TankDemo.py:35)
-CONTROL_MODE = os.getenv("MOTOR_CONTROL_MODE", "pwm").strip().lower()
+CONTROL_MODE = os.getenv("MOTOR_CONTROL_MODE", "speed").strip().lower()
 FILTER_TIME_CONSTANT_S = float(os.getenv("MOTOR_FILTER_TAU_S", "0.18"))
 RAMP_INTERVAL_S = 0.015
 PWM_UI_REFERENCE = float(os.getenv("MOTOR_PWM_UI_REFERENCE", "50"))
