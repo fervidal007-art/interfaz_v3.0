@@ -407,7 +407,7 @@ export function Gamepad({ send }) {
         </div>
 
         <div
-          className="flex flex-col items-end justify-center"
+          className="flex flex-col items-center justify-center"
           style={{ gridColumn: 3, gridRow: 1, gap: mode === 'sequence' ? 'clamp(10px, 2vh, 20px)' : '0' }}
         >
           <RotationControl onRotate={handleRotate} disabled={isPlaying || (mode === 'sequence' && !isEditing)} />
