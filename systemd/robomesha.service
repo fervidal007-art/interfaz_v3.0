@@ -8,6 +8,7 @@ Type=simple
 User=root
 WorkingDirectory=__ROOT_DIR__
 Environment=PYTHONUNBUFFERED=1
+Environment=SKIP_UPDATE=1
 ExecStart=__ROOT_DIR__/scripts/start_stack.sh
 Restart=always
 RestartSec=5

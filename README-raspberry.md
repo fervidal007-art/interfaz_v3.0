@@ -7,7 +7,7 @@
 - Reconstruye el frontend en modo `build`.
 - Arranca FastAPI sirviendo tambien el frontend compilado.
 - Instala hooks para que despues de `git pull` se ejecute el refresh automaticamente.
-- Instala un servicio `systemd` para que todo arranque con la Raspberry Pi.
+- Instala un servicio `systemd` para que todo arranque con la Raspberry Pi sin reconstruir en cada boot.
 
 ## Uso manual
 
@@ -24,6 +24,12 @@ La app quedara disponible en `http://<ip-de-la-raspberry>:8000`.
 chmod +x scripts/*.sh
 sudo ./scripts/install_service.sh
 sudo systemctl start robomesha.service
+```
+
+El servicio arranca usando el ultimo `build` ya generado. Si haces cambios o un `git pull`, corre primero:
+
+```bash
+./scripts/update_runtime.sh
 ```
 
 ## Desinstalar el servicio
