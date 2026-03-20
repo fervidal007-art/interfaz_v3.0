@@ -84,6 +84,7 @@ async def websocket_endpoint(ws: WebSocket):
     bat_mv = motor.read_battery_mv()
     if bat_mv is not None:
         logger.info(f"🔋 Batería: {bat_mv} mV ({bat_mv / 1000:.2f} V) — I2C OK")
+        await ws.send_json({"type": "battery", "voltage": round(bat_mv / 1000, 2)})
     else:
         logger.warning("⚠️  I2C no disponible — modo simulación")
     try:

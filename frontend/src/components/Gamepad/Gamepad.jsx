@@ -8,6 +8,11 @@ import { cn } from '@/lib/utils'
 
 const MAX_STEPS = 10
 const API_BASE = import.meta.env.VITE_API_URL ?? `http://${window.location.hostname}:8000`
+const SPEED_OPTIONS = [
+  { label: 'Lento', value: 20 },
+  { label: 'Normal', value: 35 },
+  { label: 'Rapido', value: 50 },
+]
 
 function makeDurationMs(input) {
   return Math.max(100, Math.round((Number(input) || 1.2) * 1000))
@@ -37,6 +42,35 @@ function EStopButton({ onPress, onRelease, disabled }) {
   )
 }
 
+function SpeedSelector({ value, onChange, disabled }) {
+  return (
+    <div className="flex items-center justify-center">
+      <div className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-white/90 p-1 shadow-sm">
+        {SPEED_OPTIONS.map((option) => {
+          const active = option.value === value
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => onChange(option.value)}
+              disabled={disabled}
+              className={cn(
+                'rounded-full px-4 py-2 text-sm font-semibold transition-all duration-150',
+                active
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted/80 hover:text-foreground',
+                disabled && 'cursor-not-allowed opacity-60'
+              )}
+            >
+              {option.label}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export function Gamepad({ send }) {
   const [sequences, setSequences]           = useState([])
   const [selectedProfileId, setSelectedProfileId] = useState('')
@@ -49,6 +83,7 @@ export function Gamepad({ send }) {
     const tab = new URLSearchParams(window.location.search).get('tab')
     return tab === 'secuencia' ? 'sequence' : 'manual'
   })
+  const [selectedSpeed, setSelectedSpeed]   = useState(35)
   const [durationInput, setDurationInput]   = useState('1.2')
   const [isPlaying, setIsPlaying]           = useState(false)
   const [activeStepIndex, setActiveStepIndex] = useState(null)
@@ -292,6 +327,11 @@ export function Gamepad({ send }) {
 
   const handleStopSequence = () => cancelSequencePlayback()
 
+  const handleSpeedChange = (nextSpeed) => {
+    setSelectedSpeed(nextSpeed)
+    send({ type: 'speed', value: nextSpeed })
+  }
+
   const handleModeChange = (nextMode) => {
     if (nextMode === mode) return
     const url = new URL(window.location.href)
@@ -314,6 +354,14 @@ export function Gamepad({ send }) {
         '--center-panel-width': 'min(100%, clamp(250px, 34vw, 520px))',
       }}
     >
+      <div className="px-[3vw] pt-[1.4vh]">
+        <SpeedSelector
+          value={selectedSpeed}
+          onChange={handleSpeedChange}
+          disabled={isPlaying}
+        />
+      </div>
+
       <div
         className="flex-1 min-h-0 grid items-center px-[3vw] py-[1.8vh]"
         style={{ gridTemplateColumns: 'auto minmax(0, 1fr) auto', columnGap: 'clamp(12px, 2vw, 26px)' }}
