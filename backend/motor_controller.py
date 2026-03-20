@@ -2,14 +2,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Cambia a True si tu referencia izquierda/derecha quedo invertida
-# respecto a los controles despues de reorientar el robot.
-MIRROR_LR_CONTROLS = True
-
-# Cambia a True si tu referencia adelante/atras quedo invertida
-# respecto a los controles despues de reorientar el robot.
-MIRROR_FB_CONTROLS = True
-
 # I2C / motor constants (from TankDemo.py)
 I2C_BUS = 1
 MOTOR_ADDR = 0x34
@@ -72,11 +64,6 @@ class MotorController:
             logger.error(f"MotorController: error I2C al escribir: {e}")
 
     def set_direction(self, direction: str, speed: int):
-        if MIRROR_LR_CONTROLS:
-            direction = MIRRORED_DIRECTION_MAP.get(direction, direction)
-        if MIRROR_FB_CONTROLS:
-            direction = FRONT_BACK_DIRECTION_MAP.get(direction, direction)
-
         vec = DIRECTION_VECTORS.get(direction)
         if vec is None:
             logger.warning(f"MotorController: dirección desconocida '{direction}'")
