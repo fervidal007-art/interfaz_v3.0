@@ -6,8 +6,26 @@
 - Instala solo cuando cambian `package.json`, `pnpm-lock.yaml` o `requirements.txt`.
 - Reconstruye el frontend en modo `build`.
 - Arranca FastAPI sirviendo tambien el frontend compilado.
-- Instala hooks para que despues de `git pull` se ejecute el refresh automaticamente.
+- Instala hooks para que despues de `git pull` se ejecute el refresh automaticamente y se reinicie el servicio.
 - Instala un servicio `systemd` para que todo arranque con la Raspberry Pi sin reconstruir en cada boot.
+
+## Setup una vez
+
+```bash
+cd ~/interfaz_v3.0
+sudo ./scripts/install_service.sh
+```
+
+Ese comando:
+
+- corrige permisos para tu usuario
+- instala o actualiza dependencias
+- genera el `build`
+- instala y habilita `robomesha.service`
+- arranca el servicio en ese momento
+- valida `http://127.0.0.1:8000/health`
+
+La app quedara disponible en `http://<ip-de-la-raspberry>:8000`.
 
 ## Uso manual
 
@@ -16,23 +34,22 @@
 ./scripts/start_stack.sh
 ```
 
-La app quedara disponible en `http://<ip-de-la-raspberry>:8000`.
+## Git pull normal
 
-## Instalar como servicio
+Despues de `git pull`, el hook corre:
+
+- `./scripts/update_runtime.sh`
+- `sudo systemctl restart robomesha.service`
+
+Si tu sistema no tiene `sudo` sin password para ese comando, puede pedirte contraseña durante el `git pull`.
+
+## Verificar servicio
 
 ```bash
-chmod +x scripts/*.sh
-sudo ./scripts/install_service.sh
-sudo systemctl start robomesha.service
+systemctl is-enabled robomesha.service
+systemctl is-active robomesha.service
+curl http://127.0.0.1:8000/health
 ```
-
-El servicio arranca usando el ultimo `build` ya generado. Si haces cambios o un `git pull`, corre primero:
-
-```bash
-./scripts/update_runtime.sh
-```
-
-El servicio queda instalado con tu usuario actual, no como `root`, para evitar problemas de permisos en `frontend/dist` y `.venv-robomesha`.
 
 ## Desinstalar el servicio
 
