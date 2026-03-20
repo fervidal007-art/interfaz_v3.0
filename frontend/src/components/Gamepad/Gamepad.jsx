@@ -360,19 +360,24 @@ export function Gamepad({ send }) {
         <SpeedSelector
           value={selectedSpeed}
           onChange={handleSpeedChange}
-          disabled={isPlaying || mode === 'sequence'}
+          disabled={isPlaying}
         />
       </div>
 
       <div
-        className="flex-1 min-h-0 grid items-center px-[3vw] py-[1.8vh]"
-        style={{ gridTemplateColumns: 'minmax(0, 1fr) var(--center-panel-width) minmax(0, 1fr)', columnGap: 'clamp(18px, 3vw, 48px)' }}
+        className="flex-1 min-h-0 grid px-[3vw] py-[1.8vh]"
+        style={{
+          gridTemplateColumns: 'minmax(0, 1fr) var(--center-panel-width) minmax(0, 1fr)',
+          gridTemplateRows: mode === 'sequence' ? 'minmax(0, 1fr) auto' : 'minmax(0, 1fr)',
+          columnGap: 'clamp(24px, 4vw, 72px)',
+          rowGap: mode === 'sequence' ? 'clamp(10px, 1.6vh, 18px)' : '0px',
+        }}
       >
-        <div className="flex justify-start">
+        <div className="flex items-center justify-start" style={{ gridColumn: 1, gridRow: 1 }}>
           <DPad onDirection={handleDirection} disabled={isPlaying || (mode === 'sequence' && !isEditing)} />
         </div>
 
-        <div className="min-w-0 flex flex-col items-center justify-center">
+        <div className="min-w-0 flex items-center justify-center" style={{ gridColumn: 2, gridRow: 1 }}>
           <CenterPanel
             mode={mode}
             onModeChange={handleModeChange}
@@ -402,21 +407,21 @@ export function Gamepad({ send }) {
           />
         </div>
 
-        <div className="flex justify-end">
-          <div className={cn(
-            'flex flex-col items-end gap-[1.1vh]',
-            mode === 'sequence' && '-translate-y-[1.4vh]'
-          )}>
-            <RotationControl onRotate={handleRotate} disabled={isPlaying || (mode === 'sequence' && !isEditing)} />
-
-            {mode === 'sequence' && (
-              <EStopButton
-                onPress={handleEStop}
-                disabled={isEditing || !isPlaying}
-              />
-            )}
-          </div>
+        <div className="flex items-center justify-end" style={{ gridColumn: 3, gridRow: 1 }}>
+          <RotationControl onRotate={handleRotate} disabled={isPlaying || (mode === 'sequence' && !isEditing)} />
         </div>
+
+        {mode === 'sequence' && (
+          <div
+            className="flex justify-end"
+            style={{ gridColumn: 3, gridRow: 2, paddingTop: 'clamp(2px, 0.6vh, 8px)' }}
+          >
+            <EStopButton
+              onPress={handleEStop}
+              disabled={isEditing || !isPlaying}
+            />
+          </div>
+        )}
       </div>
     </div>
   )
