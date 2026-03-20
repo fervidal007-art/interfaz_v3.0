@@ -46,9 +46,36 @@ function FullscreenIcon({ isFullscreen }) {
   )
 }
 
-export function StatusBar({ connected, batteryVoltage }) {
+function formatEncoderSpeed(value) {
+  if (typeof value !== 'number' || Number.isNaN(value)) return '--'
+  return `${Math.round(value)}`
+}
+
+function EncoderTelemetry({ encoderSpeeds }) {
+  const values = Array.isArray(encoderSpeeds) ? encoderSpeeds.slice(0, 4) : []
+
+  return (
+    <div className="hidden md:flex items-center gap-2 min-w-0 rounded-full border border-border/70 bg-background/80 px-3 py-1.5">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        Enc
+      </span>
+      <div className="flex items-center gap-2 text-[11px] font-medium tabular-nums text-foreground/85">
+        {[0, 1, 2, 3].map((index) => (
+          <span key={index} className="whitespace-nowrap">
+            M{index + 1} {formatEncoderSpeed(values[index])}
+          </span>
+        ))}
+      </div>
+      <span className="text-[10px] text-muted-foreground whitespace-nowrap">pps</span>
+    </div>
+  )
+}
+
+export function StatusBar({ connected, batteryVoltage, encoderSpeeds }) {
   const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement)
-  const percent = voltageToPercent(batteryVoltage)
+  const visibleBatteryVoltage = connected ? batteryVoltage : null
+  const visibleEncoderSpeeds = connected ? encoderSpeeds : null
+  const percent = voltageToPercent(visibleBatteryVoltage)
 
   useEffect(() => {
     const onChange = () => setIsFullscreen(!!document.fullscreenElement)
@@ -65,10 +92,10 @@ export function StatusBar({ connected, batteryVoltage }) {
   }, [])
 
   return (
-    <header className="flex items-center justify-between px-5 h-14 bg-white border-b border-border/50 shadow-[0_1px_6px_rgba(0,0,0,0.04)]">
+    <header className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 px-5 h-[4.6rem] bg-white border-b border-border/50 shadow-[0_1px_6px_rgba(0,0,0,0.04)]">
 
       {/* Left: connection + battery */}
-      <div className="flex items-center gap-4 min-w-0">
+      <div className="flex items-center gap-4 min-w-0 overflow-hidden">
         <div className="flex items-center gap-1.5">
           <span className={`w-2 h-2 rounded-full ring-2 shrink-0 ${connected ? 'bg-green-500 ring-green-500/20' : 'bg-muted-foreground/30 ring-muted-foreground/10'}`} />
           <span className="text-[11px] text-muted-foreground font-medium tracking-wide uppercase">
@@ -81,37 +108,39 @@ export function StatusBar({ connected, batteryVoltage }) {
           <span className="text-[11px] font-medium tabular-nums" style={{
             color: percent == null ? '#9ca3af' : percent > 50 ? '#16a34a' : percent > 20 ? '#d97706' : '#dc2626'
           }}>
-            {batteryVoltage != null ? `${batteryVoltage.toFixed(1)}V` : '—'}
+            {visibleBatteryVoltage != null ? `${visibleBatteryVoltage.toFixed(1)}V` : '—'}
           </span>
           {percent != null && (
             <span className="text-[10px] text-muted-foreground tabular-nums">{percent}%</span>
           )}
         </div>
+
+        <EncoderTelemetry encoderSpeeds={visibleEncoderSpeeds} />
       </div>
 
       {/* Center: project name */}
-      <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none select-none">
-        <h1 className="text-lg font-bold text-foreground tracking-tight leading-none">
+      <div className="pointer-events-none select-none justify-self-center">
+        <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight leading-none">
           Robo<span className="font-light text-primary/70">mesha</span>
         </h1>
       </div>
 
       {/* Right: logos + fullscreen */}
-      <div className="flex items-center gap-3 h-full py-2">
+      <div className="flex items-center justify-self-end gap-4 h-full py-2">
         <img
           src="/logo-iteso.png"
           alt="ITESO, Universidad Jesuita de Guadalajara"
-          className="h-full w-auto object-contain"
+          className="h-10 md:h-11 w-auto object-contain shrink-0"
         />
-        <div className="w-px h-8 bg-border/60" />
+        <span className="text-2xl text-muted-foreground/70 leading-none">|</span>
         <img
           src="/logo-epics.png"
           alt="EPICS in IEEE"
-          className="h-full w-auto object-contain scale-150"
+          className="h-12 md:h-14 w-auto object-contain shrink-0"
         />
         <button
           onClick={toggleFullscreen}
-          className="ml-2 p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-90 transition-all duration-100"
+          className="ml-1 p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-90 transition-all duration-100"
           aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
         >
           <FullscreenIcon isFullscreen={isFullscreen} />

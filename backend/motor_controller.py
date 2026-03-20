@@ -1,4 +1,5 @@
 import logging
+import struct
 
 logger = logging.getLogger(__name__)
 
@@ -8,6 +9,7 @@ MOTOR_ADDR = 0x34
 MOTOR_TYPE_ADDR = 0x14
 MOTOR_ENCODER_POLARITY_ADDR = 0x15
 MOTOR_FIXED_SPEED_ADDR = 0x33
+MOTOR_ENCODER_TOTAL_ADDR = 0x3C
 ADC_BAT_ADDR = 0x00
 
 MOTOR_TYPE_JGB37_520_12V_110RPM = 3
@@ -82,6 +84,18 @@ class MotorController:
             return data[0] + (data[1] << 8)
         except Exception as e:
             logger.error(f"MotorController: error leyendo batería: {e}")
+            return None
+
+    def read_encoder_counts(self) -> list[int] | None:
+        """Lee el contador acumulado de los 4 encoders y lo normaliza al eje lógico."""
+        if self._bus is None:
+            return None
+        try:
+            raw = self._bus.read_i2c_block_data(MOTOR_ADDR, MOTOR_ENCODER_TOTAL_ADDR, 16)
+            counts = struct.unpack('<iiii', bytes(raw))
+            return [count * polarity for count, polarity in zip(counts, MOTOR_POLARITY)]
+        except Exception as e:
+            logger.error(f"MotorController: error leyendo encoders: {e}")
             return None
 
     def stop(self):

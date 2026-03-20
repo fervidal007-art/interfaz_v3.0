@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -15,6 +16,7 @@ SEQUENCES_DIR = Path(__file__).parent.parent / "secuencias"
 
 motor = MotorController()
 current_speed: int = 35  # default: Normal
+TELEMETRY_INTERVAL_S = 0.25
 
 
 @asynccontextmanager
@@ -86,9 +88,46 @@ async def websocket_endpoint(ws: WebSocket):
         logger.info(f"🔋 Batería: {bat_mv} mV ({bat_mv / 1000:.2f} V) — I2C OK")
     else:
         logger.warning("⚠️  I2C no disponible — modo simulación")
+
+    last_encoder_counts: list[int] | None = None
+    last_encoder_ts: float | None = None
+
+    async def send_telemetry():
+        nonlocal last_encoder_counts, last_encoder_ts
+
+        battery_mv = motor.read_battery_mv()
+        encoder_counts = motor.read_encoder_counts()
+        encoder_speeds = None
+
+        if encoder_counts is not None:
+            now = time.monotonic()
+            if last_encoder_counts is None or last_encoder_ts is None:
+                encoder_speeds = [0.0, 0.0, 0.0, 0.0]
+            else:
+                dt = max(now - last_encoder_ts, 1e-3)
+                encoder_speeds = [round((curr - prev) / dt, 1) for curr, prev in zip(encoder_counts, last_encoder_counts)]
+            last_encoder_counts = encoder_counts
+            last_encoder_ts = now
+
+        await ws.send_json({
+            "type": "telemetry",
+            "batteryVoltage": round(battery_mv / 1000, 2) if battery_mv is not None else None,
+            "batteryMv": battery_mv,
+            "encoderCounts": encoder_counts,
+            "encoderSpeeds": encoder_speeds,
+            "commandSpeed": current_speed,
+        })
+
     try:
+        await send_telemetry()
         while True:
-            data = json.loads(await ws.receive_text())
+            try:
+                payload = await asyncio.wait_for(ws.receive_text(), timeout=TELEMETRY_INTERVAL_S)
+            except asyncio.TimeoutError:
+                await send_telemetry()
+                continue
+
+            data = json.loads(payload)
             cmd = data.get("type", "?")
 
             if cmd == "speed":
@@ -121,6 +160,8 @@ async def websocket_endpoint(ws: WebSocket):
 
             else:
                 logger.info(f"❓ {cmd.upper():>8} | {data}")
+
+            await send_telemetry()
 
     except WebSocketDisconnect:
         motor.stop()
