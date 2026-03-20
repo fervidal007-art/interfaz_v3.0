@@ -46,35 +46,9 @@ function FullscreenIcon({ isFullscreen }) {
   )
 }
 
-function formatEncoderSpeed(value) {
-  if (typeof value !== 'number' || Number.isNaN(value)) return '--'
-  return `${Math.round(value)}`
-}
-
-function EncoderTelemetry({ encoderSpeeds }) {
-  const values = Array.isArray(encoderSpeeds) ? encoderSpeeds.slice(0, 4) : []
-
-  return (
-    <div className="hidden md:flex items-center gap-2 min-w-0 rounded-full border border-border/70 bg-background/80 px-3 py-1.5">
-      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-        Enc
-      </span>
-      <div className="flex items-center gap-2 text-[11px] font-medium tabular-nums text-foreground/85">
-        {[0, 1, 2, 3].map((index) => (
-          <span key={index} className="whitespace-nowrap">
-            M{index + 1} {formatEncoderSpeed(values[index])}
-          </span>
-        ))}
-      </div>
-      <span className="text-[10px] text-muted-foreground whitespace-nowrap">pps</span>
-    </div>
-  )
-}
-
-export function StatusBar({ connected, batteryVoltage, encoderSpeeds }) {
+export function StatusBar({ connected, batteryVoltage }) {
   const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement)
   const visibleBatteryVoltage = connected ? batteryVoltage : null
-  const visibleEncoderSpeeds = connected ? encoderSpeeds : null
   const percent = voltageToPercent(visibleBatteryVoltage)
 
   useEffect(() => {
@@ -114,8 +88,6 @@ export function StatusBar({ connected, batteryVoltage, encoderSpeeds }) {
             <span className="text-[10px] text-muted-foreground tabular-nums">{percent}%</span>
           )}
         </div>
-
-        <EncoderTelemetry encoderSpeeds={visibleEncoderSpeeds} />
       </div>
 
       {/* Center: project name */}
