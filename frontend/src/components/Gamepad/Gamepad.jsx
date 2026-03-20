@@ -36,9 +36,9 @@ function EStopButton({ onPress, onRelease, disabled }) {
         disabled && 'opacity-40 cursor-not-allowed'
       )}
       style={{
-        width: 'min(100%, clamp(240px, 36vw, 420px))',
-        height: 'clamp(48px, 6.5vh, 64px)',
-        fontSize: 'clamp(1rem, 2.6vh, 1.6rem)',
+        width: 'min(100%, clamp(220px, 24vw, 320px))',
+        height: 'clamp(44px, 5.8vh, 58px)',
+        fontSize: 'clamp(0.95rem, 2.2vh, 1.35rem)',
       }}
     >
       STOP
@@ -353,7 +353,7 @@ export function Gamepad({ send }) {
       className="flex-1 flex flex-col touch-none select-none overflow-hidden"
       style={{
         '--btn-size': 'clamp(48px, min(14vw, 12vh), 110px)',
-        '--center-panel-width': 'min(100%, clamp(250px, 34vw, 520px))',
+        '--center-panel-width': 'min(100%, clamp(280px, 38vw, 560px))',
       }}
     >
       <div className="px-[3vw] pt-[1.4vh]">
@@ -365,17 +365,14 @@ export function Gamepad({ send }) {
       </div>
 
       <div
-        className={cn(
-          'flex-1 min-h-0 grid px-[3vw] py-[1.8vh]',
-          mode === 'sequence' ? 'items-start' : 'items-center'
-        )}
-        style={{ gridTemplateColumns: 'auto minmax(0, 1fr) auto', columnGap: 'clamp(12px, 2vw, 26px)' }}
+        className="flex-1 min-h-0 grid items-center px-[3vw] py-[1.8vh]"
+        style={{ gridTemplateColumns: 'minmax(0, 1fr) var(--center-panel-width) minmax(0, 1fr)', columnGap: 'clamp(18px, 3vw, 48px)' }}
       >
-        <div className="justify-self-start">
+        <div className="flex justify-start">
           <DPad onDirection={handleDirection} disabled={isPlaying || (mode === 'sequence' && !isEditing)} />
         </div>
 
-        <div className="min-w-0 flex justify-center px-[1vw]">
+        <div className="min-w-0 flex flex-col items-center justify-center gap-[1.2vh]">
           <CenterPanel
             mode={mode}
             onModeChange={handleModeChange}
@@ -403,21 +400,19 @@ export function Gamepad({ send }) {
             onPlay={handlePlaySequence}
             maxSteps={MAX_STEPS}
           />
+
+          {mode === 'sequence' && (
+            <EStopButton
+              onPress={handleEStop}
+              disabled={isEditing || !isPlaying}
+            />
+          )}
         </div>
 
-        <div className="justify-self-end">
+        <div className="flex justify-end">
           <RotationControl onRotate={handleRotate} disabled={isPlaying || (mode === 'sequence' && !isEditing)} />
         </div>
       </div>
-
-      {mode === 'sequence' && (
-        <div className="flex justify-center px-[3vw] pb-[1.8vh] pt-[0.8vh]">
-          <EStopButton
-            onPress={handleEStop}
-            disabled={isEditing || !isPlaying}
-          />
-        </div>
-      )}
     </div>
   )
 }
