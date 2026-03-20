@@ -1,11 +1,8 @@
 import logging
-<<<<<<< Updated upstream
 import struct
-=======
 import threading
 import time
 from typing import List, Optional
->>>>>>> Stashed changes
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +128,7 @@ class MotorController:
             logger.error(f"MotorController: error leyendo batería: {e}")
             return None
 
-    def read_encoder_counts(self) -> list[int] | None:
+    def read_encoder_counts(self) -> Optional[List[int]]:
         """Lee el contador acumulado de los 4 encoders y lo normaliza al eje lógico."""
         if self._bus is None:
             return None
