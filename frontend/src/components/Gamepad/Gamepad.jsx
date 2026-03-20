@@ -372,7 +372,7 @@ export function Gamepad({ send }) {
           <DPad onDirection={handleDirection} disabled={isPlaying || (mode === 'sequence' && !isEditing)} />
         </div>
 
-        <div className="min-w-0 flex flex-col items-center justify-center gap-[1.2vh]">
+        <div className="min-w-0 flex flex-col items-center justify-center">
           <CenterPanel
             mode={mode}
             onModeChange={handleModeChange}
@@ -400,17 +400,22 @@ export function Gamepad({ send }) {
             onPlay={handlePlaySequence}
             maxSteps={MAX_STEPS}
           />
-
-          {mode === 'sequence' && (
-            <EStopButton
-              onPress={handleEStop}
-              disabled={isEditing || !isPlaying}
-            />
-          )}
         </div>
 
         <div className="flex justify-end">
-          <RotationControl onRotate={handleRotate} disabled={isPlaying || (mode === 'sequence' && !isEditing)} />
+          <div className={cn(
+            'flex flex-col items-end gap-[1.1vh]',
+            mode === 'sequence' && '-translate-y-[1.4vh]'
+          )}>
+            <RotationControl onRotate={handleRotate} disabled={isPlaying || (mode === 'sequence' && !isEditing)} />
+
+            {mode === 'sequence' && (
+              <EStopButton
+                onPress={handleEStop}
+                disabled={isEditing || !isPlaying}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>
