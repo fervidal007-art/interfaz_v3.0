@@ -11,12 +11,12 @@ const KEYFRAMES = `
     to   { opacity: 0; transform: scale(0.92); }
   }
   @keyframes ss-logos-in {
-    from { opacity: 0; transform: translate(-50%, calc(-50% + 20px)) scale(0.92); }
-    to   { opacity: 1; transform: translate(-50%, -50%)               scale(1);   }
+    from { opacity: 0; transform: translateY(20px) scale(0.92); }
+    to   { opacity: 1; transform: translateY(0)    scale(1);    }
   }
   @keyframes ss-logos-pulse {
-    0%,100% { transform: translate(-50%, -50%) scale(1);    }
-    50%     { transform: translate(-50%, -50%) scale(1.025); }
+    0%,100% { transform: scale(1);     }
+    50%     { transform: scale(1.025); }
   }
   @keyframes ss-overlay-out {
     from { opacity: 1; }
@@ -138,19 +138,16 @@ function Landing({ onEnter }) {
 }
 
 // ─── Logos Stage ──────────────────────────────────────────────────────────────
+// Uses flexbox centering (always pixel-perfect) for the show phase,
+// then switches to absolute positioning only for the fly-to-header phase.
 function LogosStage({ onComplete }) {
-  const [phase, setPhase] = useState('measure')
-  const [vp, setVp] = useState({ w: window.innerWidth, h: window.innerHeight })
+  const [phase, setPhase] = useState('wait')
   const [overlayFading, setOverlayFading] = useState(false)
 
-  // Wait for fullscreen/orientation to settle, then measure real viewport
+  // Let fullscreen settle, then show
   useEffect(() => {
-    const measure = () => setVp({ w: window.innerWidth, h: window.innerHeight })
-    measure()
-    // Re-measure after resize settles (fullscreen + orientation change)
-    const t = setTimeout(() => { measure(); setPhase('show') }, 500)
-    window.addEventListener('resize', measure)
-    return () => { clearTimeout(t); window.removeEventListener('resize', measure) }
+    const t = setTimeout(() => setPhase('show'), 500)
+    return () => clearTimeout(t)
   }, [])
 
   // Hold 3s then fly
@@ -168,68 +165,65 @@ function LogosStage({ onComplete }) {
     return () => { clearTimeout(t1); clearTimeout(t2) }
   }, [phase, onComplete])
 
-  // Logo heights: scale to viewport but cap at comfortable sizes.
-  // ITESO is 3.5:1 (very wide), EPICS is 1.5:1 (nearly square).
-  // At 30dvh ITESO height → ~30%*vh width ≈ 3.5 * 30dvh. Need to stay within ~85vw total.
-  // Use vp.h for calculations so they're based on measured viewport.
-  const itesoH = Math.min(vp.h * 0.18, 120)   // ~18vh, max 120px
-  const epicsH = Math.min(vp.h * 0.38, 240)   // ~38vh, max 240px
-  const gap = Math.min(vp.w * 0.03, 32)
+  const isFly = phase === 'fly'
 
-  const isFly = phase === 'fly' || phase === 'out'
+  // Overlay: flexbox center for 'wait'/'show', switch off for 'fly'
+  const overlayStyle = {
+    position: 'fixed', inset: 0, zIndex: 9999,
+    background: 'white',
+    pointerEvents: 'none',
+    overflow: 'hidden',
+    ...(isFly
+      ? {}
+      : { display: 'flex', alignItems: 'center', justifyContent: 'center' }
+    ),
+    animation: overlayFading ? 'ss-overlay-out 0.7s ease both' : undefined,
+  }
 
+  // Logos container
   const logosStyle = (() => {
-    if (phase === 'measure') {
-      return { opacity: 0, transform: 'translate(-50%, -50%)' }
+    if (phase === 'wait') {
+      return { opacity: 0 }
     }
     if (phase === 'show') {
       return {
         animation: 'ss-logos-in 0.65s cubic-bezier(0.22,1,0.36,1) both, ss-logos-pulse 2.2s ease-in-out 0.8s 1 both',
       }
     }
-    // fly
+    // fly — switch to absolute and animate to top center
     return {
-      transition: 'top 0.8s cubic-bezier(0.4,0,0.2,1), left 0.8s cubic-bezier(0.4,0,0.2,1), transform 0.8s cubic-bezier(0.4,0,0.2,1)',
+      position: 'absolute',
       top: 0,
       left: '50%',
       transform: 'translate(-50%, 0) scale(0.28)',
+      transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
     }
   })()
 
-  const logosPos = isFly ? {} : { top: vp.h / 2, left: vp.w / 2 }
-
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
-      background: 'white',
-      pointerEvents: 'none',
-      overflow: 'hidden',
-      animation: overlayFading ? 'ss-overlay-out 0.7s ease both' : undefined,
-    }}>
+    <div style={overlayStyle}>
       <div style={{
-        position: 'absolute',
         display: 'flex',
         alignItems: 'center',
-        gap,
+        gap: 'clamp(16px, 3vw, 32px)',
         transformOrigin: 'top center',
-        willChange: 'transform, top, left',
-        ...logosPos,
+        willChange: 'transform, opacity',
         ...logosStyle,
       }}>
         <img
           src="/logo-iteso.png"
           alt="ITESO, Universidad Jesuita de Guadalajara"
-          style={{ height: itesoH, width: 'auto', objectFit: 'contain', display: 'block' }}
+          style={{ height: 'clamp(60px, 18dvh, 120px)', width: 'auto', objectFit: 'contain', display: 'block' }}
         />
         <span style={{
-          fontSize: Math.min(vp.h * 0.08, 44),
+          fontSize: 'clamp(24px, 7dvh, 44px)',
           color: 'oklch(0.78 0.01 250)',
           fontWeight: 200, lineHeight: 1, userSelect: 'none',
         }}>|</span>
         <img
           src="/logo-epics.png"
           alt="EPICS in IEEE"
-          style={{ height: epicsH, width: 'auto', objectFit: 'contain', display: 'block' }}
+          style={{ height: 'clamp(100px, 38dvh, 240px)', width: 'auto', objectFit: 'contain', display: 'block' }}
         />
       </div>
     </div>
