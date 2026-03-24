@@ -50,7 +50,10 @@ function EStopButton({ onPress, onRelease, disabled }) {
 function SpeedSelector({ value, onChange, disabled }) {
   return (
     <div className="flex items-center justify-center">
-      <div className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-white/90 p-1 shadow-sm">
+      <div
+        className="inline-flex items-center rounded-full border border-border/60 bg-white/95 shadow-sm"
+        style={{ padding: '3px', gap: '2px' }}
+      >
         {SPEED_OPTIONS.map((option) => {
           const active = option.value === value
           return (
@@ -60,12 +63,20 @@ function SpeedSelector({ value, onChange, disabled }) {
               onClick={() => onChange(option.value)}
               disabled={disabled}
               className={cn(
-                'rounded-full px-4 py-2 text-sm font-semibold transition-all duration-150',
+                'rounded-full transition-all duration-150',
                 active
                   ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-muted-foreground hover:bg-muted/80 hover:text-foreground',
+                  : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground',
                 disabled && 'cursor-not-allowed opacity-60'
               )}
+              style={{
+                padding: '3px 14px',
+                fontSize: 'clamp(10px, 1.2dvh, 12px)',
+                fontWeight: 600,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                lineHeight: 1.6,
+              }}
             >
               {option.label}
             </button>
@@ -369,7 +380,7 @@ export function Gamepad({ send }) {
           '--center-panel-width': 'min(100%, clamp(280px, 38vw, 560px))',
         }}
       >
-        <div className="px-[3vw]" style={{ paddingTop: 'clamp(4px, 1.4dvh, 14px)' }}>
+        <div className="px-[3vw]" style={{ paddingTop: 'clamp(10px, 3dvh, 28px)' }}>
           <SpeedSelector
             value={selectedSpeed}
             onChange={handleSpeedChange}
