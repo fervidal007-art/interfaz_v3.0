@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { getActionForStep, formatDuration } from '@/lib/sequenceProfiles'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -291,7 +292,7 @@ function SequenceEditor({
   const stepList = (
     <div ref={listRef} style={{
       display: 'flex', flexDirection: 'column', gap: S.gapSm,
-      maxHeight: 'clamp(80px, 28dvh, 260px)', overflowY: 'auto',
+      maxHeight: 'clamp(100px, 38dvh, 360px)', overflowY: 'auto',
     }}>
       {draftSteps.length === 0 ? (
         <div style={{
@@ -615,17 +616,63 @@ function SequenceEditor({
 
 // ─── CenterPanel ──────────────────────────────────────────────────────────────
 
-export function CenterPanel({
-  mode, onModeChange,
-  sequences, selectedProfileId, onSelectProfile,
-  isEditing, onStartEdit, onCancelEdit, onSaveEdit,
-  editName, onEditNameChange,
-  onCreateProfile, onDeleteProfile, onClearDraft,
-  durationInput, onDurationInputChange, onAddEstopStep,
-  draftSteps, onReorderSteps, onRemoveStep, onChangeDuration,
-  isPlaying, activeStepIndex, onPlay,
-  maxSteps,
-}) {
+const sequenceEditorProps = (props) => ({
+  sequences: props.sequences,
+  selectedProfileId: props.selectedProfileId,
+  onSelectProfile: props.onSelectProfile,
+  isEditing: props.isEditing,
+  onStartEdit: props.onStartEdit,
+  onCancelEdit: props.onCancelEdit,
+  onSaveEdit: props.onSaveEdit,
+  editName: props.editName,
+  onEditNameChange: props.onEditNameChange,
+  onCreateProfile: props.onCreateProfile,
+  onDeleteProfile: props.onDeleteProfile,
+  onClearDraft: props.onClearDraft,
+  durationInput: props.durationInput,
+  onDurationInputChange: props.onDurationInputChange,
+  onAddEstopStep: props.onAddEstopStep,
+  draftSteps: props.draftSteps,
+  onReorderSteps: props.onReorderSteps,
+  onRemoveStep: props.onRemoveStep,
+  onChangeDuration: props.onChangeDuration,
+  isPlaying: props.isPlaying,
+  activeStepIndex: props.activeStepIndex,
+  onPlay: props.onPlay,
+  maxSteps: props.maxSteps,
+})
+
+export function CenterPanel(props) {
+  const { mode, onModeChange, isEditing } = props
+
+  // Edit mode: render as a floating modal so it's never clipped
+  if (mode === 'sequence' && isEditing) {
+    return createPortal(
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 60,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        pointerEvents: 'none',
+      }}>
+        <section className="sequence-edit-modal" style={{
+          pointerEvents: 'all',
+          width: 'min(92vw, 540px)',
+          maxHeight: '88dvh',
+          overflow: 'hidden',
+          display: 'flex', flexDirection: 'column', gap: S.gap,
+          borderRadius: 'clamp(20px, 3dvh, 32px)',
+          border: '1px solid oklch(0.90 0.01 250)',
+          background: 'oklch(1 0 0 / 0.98)',
+          boxShadow: '0 24px 80px oklch(0.30 0.07 250 / 0.22), 0 2px 8px oklch(0.30 0.07 250 / 0.08)',
+          padding: S.pad,
+        }}>
+          <ModeSwitch mode={mode} onChange={onModeChange} />
+          <SequenceEditor {...sequenceEditorProps(props)} />
+        </section>
+      </div>,
+      document.body
+    )
+  }
+
   return (
     <section style={{
       width: 'var(--center-panel-width)',
@@ -648,31 +695,7 @@ export function CenterPanel({
       )}
 
       {mode === 'sequence' && (
-        <SequenceEditor
-          sequences={sequences}
-          selectedProfileId={selectedProfileId}
-          onSelectProfile={onSelectProfile}
-          isEditing={isEditing}
-          onStartEdit={onStartEdit}
-          onCancelEdit={onCancelEdit}
-          onSaveEdit={onSaveEdit}
-          editName={editName}
-          onEditNameChange={onEditNameChange}
-          onCreateProfile={onCreateProfile}
-          onDeleteProfile={onDeleteProfile}
-          onClearDraft={onClearDraft}
-          durationInput={durationInput}
-          onDurationInputChange={onDurationInputChange}
-          onAddEstopStep={onAddEstopStep}
-          draftSteps={draftSteps}
-          onReorderSteps={onReorderSteps}
-          onRemoveStep={onRemoveStep}
-          onChangeDuration={onChangeDuration}
-          isPlaying={isPlaying}
-          activeStepIndex={activeStepIndex}
-          onPlay={onPlay}
-          maxSteps={maxSteps}
-        />
+        <SequenceEditor {...sequenceEditorProps(props)} />
       )}
     </section>
   )

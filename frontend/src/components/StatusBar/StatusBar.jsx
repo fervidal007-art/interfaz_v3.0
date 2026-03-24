@@ -66,8 +66,8 @@ export function StatusBar({ connected, batteryVoltage }) {
   }, [])
 
   return (
-    <header className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 px-5 bg-white border-b border-border/50 shadow-[0_1px_6px_rgba(0,0,0,0.04)]" style={{ height: 'clamp(52px, 8dvh, 74px)' }}>
-      <div className="flex items-center gap-4 min-w-0 overflow-hidden">
+    <header className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center px-4 bg-white border-b border-border/50 shadow-[0_1px_6px_rgba(0,0,0,0.04)]" style={{ height: 'clamp(52px, 8dvh, 74px)', gap: 'clamp(8px, 2vw, 24px)' }}>
+      <div className="flex items-center min-w-0 overflow-hidden" style={{ gap: 'clamp(8px, 1.5vw, 20px)' }}>
         <div className="flex items-center gap-1.5">
           <span className={`w-2 h-2 rounded-full ring-2 shrink-0 ${connected ? 'bg-green-500 ring-green-500/20' : 'bg-muted-foreground/30 ring-muted-foreground/10'}`} />
           <span className="text-[11px] text-muted-foreground font-medium tracking-wide uppercase">
@@ -88,24 +88,28 @@ export function StatusBar({ connected, batteryVoltage }) {
         </div>
       </div>
 
-      <div className="flex items-center justify-self-center gap-4 h-full py-2">
+      <div className="flex items-center justify-self-center h-full" style={{ gap: 'clamp(8px, 1.5vw, 20px)', padding: 'clamp(6px, 1dvh, 10px) 0' }}>
         <img
           src="/logo-iteso.png"
           alt="ITESO, Universidad Jesuita de Guadalajara"
-          className="h-10 md:h-11 w-auto object-contain shrink-0"
+          className="w-auto object-contain shrink-0"
+          style={{ height: 'clamp(28px, 5dvh, 44px)' }}
         />
-        <span className="text-2xl text-muted-foreground/70 leading-none">|</span>
+        <span className="text-muted-foreground/50 leading-none" style={{ fontSize: 'clamp(16px, 3dvh, 28px)' }}>|</span>
         <img
           src="/logo-epics.png"
           alt="EPICS in IEEE"
-          className="h-12 md:h-14 w-auto object-contain shrink-0"
+          className="w-auto object-contain shrink-0"
+          style={{ height: 'clamp(30px, 5.5dvh, 50px)' }}
         />
       </div>
 
-      <div className="flex items-center justify-self-end gap-4">
+      <div className="flex items-center justify-self-end" style={{ gap: 'clamp(8px, 1.5vw, 16px)' }}>
         <div className="pointer-events-none select-none">
-          <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight leading-none">
-            Robo<span className="font-light text-primary/70">mesha</span>
+          <h1 className="tracking-tight leading-none" style={{ fontSize: 'clamp(1rem, 2.4dvh, 1.5rem)' }}>
+            <span style={{ fontWeight: 900 }}>Robo</span>
+            <span style={{ fontWeight: 200, color: 'oklch(0.50 0.02 250)' }}>Mesh</span>
+            <span style={{ fontWeight: 900 }}>A</span>
           </h1>
         </div>
         <button

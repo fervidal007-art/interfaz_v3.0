@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { CenterPanel } from '@/components/CenterPanel/CenterPanel'
 import { DPad } from '@/components/DPad/DPad'
 import { RotationControl } from '@/components/RotationControl/RotationControl'
@@ -349,77 +350,97 @@ export function Gamepad({ send }) {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div
-      className="flex-1 flex flex-col touch-none select-none overflow-hidden"
-      style={{
-        '--btn-size': 'clamp(48px, min(14vw, 12dvh), 110px)',
-        '--center-panel-width': 'min(100%, clamp(280px, 38vw, 560px))',
-      }}
-    >
-      <div className="px-[3vw]" style={{ paddingTop: 'clamp(4px, 1.4dvh, 14px)' }}>
-        <SpeedSelector
-          value={selectedSpeed}
-          onChange={handleSpeedChange}
-          disabled={isPlaying}
-        />
-      </div>
+    <>
+      {isEditing && createPortal(
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 40,
+          background: 'oklch(0.15 0.02 250 / 0.45)',
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
+          pointerEvents: 'none',
+        }} />,
+        document.body
+      )}
 
       <div
-        className="flex-1 min-h-0 grid px-[3vw]"
-          style={{ paddingBlock: 'clamp(6px, 1.8dvh, 18px)' }}
+        className="flex-1 flex flex-col touch-none select-none overflow-hidden"
         style={{
-          gridTemplateColumns: 'minmax(0, 1fr) var(--center-panel-width) minmax(0, 1fr)',
-          gridTemplateRows: 'minmax(0, 1fr)',
-          columnGap: 'clamp(24px, 4vw, 72px)',
+          '--btn-size': 'clamp(48px, min(14vw, 12dvh), 110px)',
+          '--center-panel-width': 'min(100%, clamp(280px, 38vw, 560px))',
         }}
       >
-        <div className="flex items-center justify-start" style={{ gridColumn: 1, gridRow: 1 }}>
-          <DPad onDirection={handleDirection} disabled={isPlaying || (mode === 'sequence' && !isEditing)} />
-        </div>
-
-        <div className="min-w-0 min-h-0 flex flex-col items-center justify-center overflow-hidden" style={{ gridColumn: 2, gridRow: 1 }}>
-          <CenterPanel
-            mode={mode}
-            onModeChange={handleModeChange}
-            sequences={sequences}
-            selectedProfileId={selectedProfileId}
-            onSelectProfile={handleSelectProfile}
-            isEditing={isEditing}
-            onStartEdit={handleStartEdit}
-            onCancelEdit={handleCancelEdit}
-            onSaveEdit={handleSaveEdit}
-            editName={editName}
-            onEditNameChange={setEditName}
-            onCreateProfile={handleCreateProfile}
-            onDeleteProfile={handleDeleteProfile}
-            onClearDraft={handleClearDraft}
-            durationInput={durationInput}
-            onDurationInputChange={setDurationInput}
-            onAddEstopStep={handleAddEstopStep}
-            draftSteps={draftSteps}
-            onReorderSteps={handleMoveStep}
-            onRemoveStep={handleRemoveStep}
-            onChangeDuration={handleChangeDuration}
-            isPlaying={isPlaying}
-            activeStepIndex={activeStepIndex}
-            onPlay={handlePlaySequence}
-            maxSteps={MAX_STEPS}
+        <div className="px-[3vw]" style={{ paddingTop: 'clamp(4px, 1.4dvh, 14px)' }}>
+          <SpeedSelector
+            value={selectedSpeed}
+            onChange={handleSpeedChange}
+            disabled={isPlaying}
           />
         </div>
 
         <div
-          className="flex flex-col items-center justify-center"
-          style={{ gridColumn: 3, gridRow: 1, gap: mode === 'sequence' ? 'clamp(10px, 2dvh, 20px)' : '0' }}
+          className="flex-1 min-h-0 grid px-[3vw]"
+          style={{
+            paddingBlock: 'clamp(6px, 1.8dvh, 18px)',
+            gridTemplateColumns: 'minmax(0, 1fr) var(--center-panel-width) minmax(0, 1fr)',
+            gridTemplateRows: 'minmax(0, 1fr)',
+            columnGap: 'clamp(24px, 4vw, 72px)',
+          }}
         >
-          <RotationControl onRotate={handleRotate} disabled={isPlaying || (mode === 'sequence' && !isEditing)} />
-          {mode === 'sequence' && (
-            <EStopButton
-              onPress={handleEStop}
-              disabled={isEditing || !isPlaying}
+          <div
+            className="flex items-center justify-start"
+            style={{ gridColumn: 1, gridRow: 1, ...(isEditing ? { position: 'relative', zIndex: 41 } : {}) }}
+          >
+            <DPad onDirection={handleDirection} disabled={isPlaying || (mode === 'sequence' && !isEditing)} />
+          </div>
+
+          <div className="min-w-0 min-h-0 flex flex-col items-center justify-center overflow-hidden" style={{ gridColumn: 2, gridRow: 1 }}>
+            <CenterPanel
+              mode={mode}
+              onModeChange={handleModeChange}
+              sequences={sequences}
+              selectedProfileId={selectedProfileId}
+              onSelectProfile={handleSelectProfile}
+              isEditing={isEditing}
+              onStartEdit={handleStartEdit}
+              onCancelEdit={handleCancelEdit}
+              onSaveEdit={handleSaveEdit}
+              editName={editName}
+              onEditNameChange={setEditName}
+              onCreateProfile={handleCreateProfile}
+              onDeleteProfile={handleDeleteProfile}
+              onClearDraft={handleClearDraft}
+              durationInput={durationInput}
+              onDurationInputChange={setDurationInput}
+              onAddEstopStep={handleAddEstopStep}
+              draftSteps={draftSteps}
+              onReorderSteps={handleMoveStep}
+              onRemoveStep={handleRemoveStep}
+              onChangeDuration={handleChangeDuration}
+              isPlaying={isPlaying}
+              activeStepIndex={activeStepIndex}
+              onPlay={handlePlaySequence}
+              maxSteps={MAX_STEPS}
             />
-          )}
+          </div>
+
+          <div
+            className="flex flex-col items-center justify-center"
+            style={{
+              gridColumn: 3, gridRow: 1,
+              gap: mode === 'sequence' ? 'clamp(10px, 2dvh, 20px)' : '0',
+              ...(isEditing ? { position: 'relative', zIndex: 41 } : {}),
+            }}
+          >
+            <RotationControl onRotate={handleRotate} disabled={isPlaying || (mode === 'sequence' && !isEditing)} />
+            {mode === 'sequence' && (
+              <EStopButton
+                onPress={handleEStop}
+                disabled={isEditing || !isPlaying}
+              />
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
