@@ -96,7 +96,7 @@ export function StatusBar({ connected, batteryVoltage }) {
         </div>
       </div>
 
-      <div className="flex items-center justify-self-center h-full" style={{ gap: 'clamp(8px, 1.5vw, 20px)', paddingBlock: 0 }}>
+      <div className="flex items-center justify-self-center h-full" style={{ gap: 'clamp(8px, 1.5vw, 20px)', paddingTop: 'clamp(6px, 1.2dvh, 10px)', paddingBottom: 0 }}>
         <img
           src="/logo-iteso.png"
           alt="ITESO, Universidad Jesuita de Guadalajara"
