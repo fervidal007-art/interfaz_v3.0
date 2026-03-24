@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
-// ─── CSS Keyframes ────────────────────────────────────────────────────────────
+// ─── CSS Keyframes (static — no translate offsets for centering) ─────────────
 const KEYFRAMES = `
   @keyframes ss-btn-in {
     from { opacity: 0; transform: translateY(12px) scale(0.95); }
@@ -11,12 +11,12 @@ const KEYFRAMES = `
     to   { opacity: 0; transform: scale(0.92); }
   }
   @keyframes ss-logos-in {
-    from { opacity: 0; transform: translate(-50%, calc(-50% + 20px)) scale(0.92); }
-    to   { opacity: 1; transform: translate(-50%, -50%)              scale(1);    }
+    from { opacity: 0; transform: translateY(20px) scale(0.92); }
+    to   { opacity: 1; transform: translateY(0)    scale(1);    }
   }
   @keyframes ss-logos-pulse {
-    0%,100% { transform: translate(-50%, -50%) scale(1);     }
-    50%     { transform: translate(-50%, -50%) scale(1.025); }
+    0%,100% { transform: scale(1);     }
+    50%     { transform: scale(1.025); }
   }
   @keyframes ss-overlay-out {
     from { opacity: 1; }
@@ -32,6 +32,19 @@ const KEYFRAMES = `
   }
 `
 
+// Shared full-viewport overlay style (flex-centered)
+const OVERLAY_STYLE = {
+  position: 'fixed',
+  inset: 0,
+  width: '100dvw',
+  height: '100dvh',
+  zIndex: 10000,
+  background: 'white',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+}
+
 // ─── Portrait Gate ────────────────────────────────────────────────────────────
 function PortraitGate({ onLandscape }) {
   useEffect(() => {
@@ -44,10 +57,8 @@ function PortraitGate({ onLandscape }) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 10000,
-      background: 'white',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
+      ...OVERLAY_STYLE,
+      flexDirection: 'column',
       gap: '2rem',
       animation: 'ss-portrait-in 0.5s cubic-bezier(0.22,1,0.36,1) both',
     }}>
@@ -106,11 +117,7 @@ function Landing({ onEnter }) {
   }
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 10000,
-      background: 'white',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
+    <div style={OVERLAY_STYLE}>
       <button
         onPointerUp={handleTap}
         style={{
@@ -138,11 +145,13 @@ function Landing({ onEnter }) {
 }
 
 // ─── Logos Stage ──────────────────────────────────────────────────────────────
-// Uses flexbox centering (always pixel-perfect) for the show phase,
-// then switches to absolute positioning only for the fly-to-header phase.
+// Flexbox-centered in show phase; dynamic keyframe animation for fly phase.
 function LogosStage({ onComplete }) {
   const [phase, setPhase] = useState('wait')
   const [overlayFading, setOverlayFading] = useState(false)
+  const [flyStyle, setFlyStyle] = useState(null)
+  const logosRef = useRef(null)
+  const styleRef = useRef(null)
 
   // Let fullscreen settle, then show
   useEffect(() => {
@@ -157,55 +166,93 @@ function LogosStage({ onComplete }) {
     return () => clearTimeout(t)
   }, [phase])
 
-  // Fly → fade overlay → complete
+  // Fly phase: measure current position, inject dynamic keyframes, animate
   useEffect(() => {
     if (phase !== 'fly') return
+
+    const el = logosRef.current
+    if (!el) return
+
+    // Measure where the logos currently are
+    const rect = el.getBoundingClientRect()
+    const currentCenterX = rect.left + rect.width / 2
+    const currentCenterY = rect.top + rect.height / 2
+
+    // Target: top-center of viewport (header area)
+    const targetCenterX = window.innerWidth / 2
+    const targetCenterY = 0
+
+    // Translate deltas from current position
+    const dx = targetCenterX - currentCenterX
+    const dy = targetCenterY - currentCenterY
+
+    // Inject dynamic keyframes
+    const keyframeName = 'ss-fly-dynamic'
+    const css = `
+      @keyframes ${keyframeName} {
+        from { transform: translate(0, 0) scale(1); opacity: 1; }
+        to   { transform: translate(${dx}px, ${dy}px) scale(0.28); opacity: 1; }
+      }
+    `
+    const styleEl = document.createElement('style')
+    styleEl.textContent = css
+    document.head.appendChild(styleEl)
+    styleRef.current = styleEl
+
+    setFlyStyle({
+      animation: `${keyframeName} 0.8s cubic-bezier(0.4,0,0.2,1) forwards`,
+    })
+
+    // Fade overlay partway through, then complete
     const t1 = setTimeout(() => setOverlayFading(true), 200)
     const t2 = setTimeout(onComplete, 900)
-    return () => { clearTimeout(t1); clearTimeout(t2) }
+    return () => {
+      clearTimeout(t1)
+      clearTimeout(t2)
+    }
   }, [phase, onComplete])
 
-  // Logos container — always position:absolute so CSS can transition smoothly
+  // Clean up injected style on unmount
+  useEffect(() => {
+    return () => {
+      if (styleRef.current) {
+        styleRef.current.remove()
+      }
+    }
+  }, [])
+
+  const isWait = phase === 'wait'
+  const isShow = phase === 'show'
+  const isFly = phase === 'fly'
+
+  // Logos container style per phase
   const logosStyle = (() => {
-    if (phase === 'wait') {
-      return {
-        opacity: 0,
-        top: '50%', left: '50%',
-        transform: 'translate(-50%, -50%)',
-      }
+    if (isWait) return { opacity: 0 }
+    if (isShow) return {
+      animation: 'ss-logos-in 0.65s cubic-bezier(0.22,1,0.36,1) both, ss-logos-pulse 2.2s ease-in-out 0.8s 1 both',
     }
-    if (phase === 'show') {
-      return {
-        top: '50%', left: '50%',
-        animation: 'ss-logos-in 0.65s cubic-bezier(0.22,1,0.36,1) both, ss-logos-pulse 2.2s ease-in-out 0.8s 1 both',
-      }
-    }
-    // fly — animate to top center
-    return {
-      top: 0,
-      left: '50%',
-      transform: 'translate(-50%, 0) scale(0.28)',
-      transition: 'top 0.8s cubic-bezier(0.4,0,0.2,1), transform 0.8s cubic-bezier(0.4,0,0.2,1)',
-    }
+    // fly — use dynamically computed animation
+    return flyStyle || {}
   })()
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
-      background: 'white',
+      ...OVERLAY_STYLE,
+      zIndex: 9999,
       pointerEvents: 'none',
       overflow: 'hidden',
       animation: overlayFading ? 'ss-overlay-out 0.7s ease both' : undefined,
     }}>
-      <div style={{
-        position: 'absolute',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 'clamp(16px, 3vw, 32px)',
-        transformOrigin: 'top center',
-        willChange: 'transform, top',
-        ...logosStyle,
-      }}>
+      <div
+        ref={logosRef}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'clamp(16px, 3dvw, 32px)',
+          willChange: 'transform, opacity',
+          ...logosStyle,
+        }}
+      >
         <img
           src="/logo-iteso.png"
           alt="ITESO, Universidad Jesuita de Guadalajara"
