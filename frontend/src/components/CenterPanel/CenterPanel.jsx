@@ -655,8 +655,8 @@ export function CenterPanel(props) {
       }}>
         <section className="sequence-edit-modal" style={{
           pointerEvents: 'all',
-          width: 'clamp(300px, 50vw, 520px)',
-          maxHeight: '82dvh',
+          width: 'clamp(280px, 38vw, 460px)',
+          maxHeight: '88dvh',
           overflow: 'hidden',
           display: 'flex', flexDirection: 'column', gap: S.gap,
           borderRadius: 'clamp(20px, 3dvh, 32px)',
