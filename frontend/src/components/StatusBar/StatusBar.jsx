@@ -96,19 +96,19 @@ export function StatusBar({ connected, batteryVoltage }) {
         </div>
       </div>
 
-      <div className="flex items-center justify-self-center h-full" style={{ gap: 'clamp(8px, 1.5vw, 20px)', paddingBlock: 'clamp(2px, 0.3dvh, 4px)' }}>
+      <div className="flex items-center justify-self-center h-full" style={{ gap: 'clamp(8px, 1.5vw, 20px)', paddingBlock: 0 }}>
         <img
           src="/logo-iteso.png"
           alt="ITESO, Universidad Jesuita de Guadalajara"
           className="w-auto object-contain shrink-0"
-          style={{ height: 'clamp(34px, 6.6dvh, 62px)' }}
+          style={{ height: 'clamp(42px, 8.5dvh, 76px)' }}
         />
-        <span className="text-muted-foreground/40 leading-none" style={{ fontSize: 'clamp(18px, 3.5dvh, 32px)' }}>|</span>
+        <span className="text-muted-foreground/40 leading-none" style={{ fontSize: 'clamp(20px, 4dvh, 36px)' }}>|</span>
         <img
           src="/logo-epics.png"
           alt="EPICS in IEEE"
           className="w-auto object-contain shrink-0"
-          style={{ height: 'clamp(42px, 8dvh, 70px)' }}
+          style={{ height: 'clamp(64px, 13dvh, 112px)' }}
         />
       </div>
 
