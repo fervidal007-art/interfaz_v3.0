@@ -1,110 +1,134 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
+// ─── CSS Keyframes ────────────────────────────────────────────────────────────
 const KEYFRAMES = `
-@keyframes splash-fade-in {
-  from { opacity: 0; transform: scale(0.92); }
-  to   { opacity: 1; transform: scale(1); }
-}
-@keyframes splash-fade-out {
-  from { opacity: 1; }
-  to   { opacity: 0; }
-}
-@keyframes splash-logos-rise {
-  from {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+  @keyframes ss-btn-in {
+    from { opacity: 0; transform: translateY(12px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0)    scale(1);    }
   }
-  to {
-    opacity: 0;
-    transform: translate(-50%, -320%) scale(0.38);
+  @keyframes ss-btn-out {
+    from { opacity: 1; transform: scale(1);    }
+    to   { opacity: 0; transform: scale(0.92); }
   }
-}
-@keyframes rotate-pulse {
-  0%, 100% { transform: rotate(-15deg); }
-  50%       { transform: rotate(15deg); }
-}
+  @keyframes ss-logos-in {
+    from { opacity: 0; transform: translate(-50%, calc(-50% + 20px)) scale(0.92); }
+    to   { opacity: 1; transform: translate(-50%, -50%)               scale(1);   }
+  }
+  @keyframes ss-logos-pulse {
+    0%,100% { transform: translate(-50%, -50%) scale(1);    }
+    50%     { transform: translate(-50%, -50%) scale(1.025); }
+  }
+  @keyframes ss-overlay-out {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
+  @keyframes ss-rotate-hint {
+    0%,100% { transform: rotate(-20deg); }
+    50%     { transform: rotate(20deg);  }
+  }
+  @keyframes ss-portrait-in {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0);    }
+  }
 `
 
-// ─── Portrait gate ────────────────────────────────────────────────────────────
-function PortraitGate({ onProceed }) {
-  const [pressing, setPressing] = useState(false)
-
-  async function handleEnter() {
-    setPressing(true)
-    try {
-      await document.documentElement.requestFullscreen()
-    } catch (_) {}
-    try {
-      await screen.orientation.lock('landscape')
-    } catch (_) {}
-    // Small delay so orientation has time to settle
-    setTimeout(onProceed, 300)
-  }
+// ─── Portrait Gate ────────────────────────────────────────────────────────────
+function PortraitGate({ onLandscape }) {
+  useEffect(() => {
+    const mq = window.matchMedia('(orientation: landscape)')
+    if (mq.matches) { onLandscape(); return }
+    const handler = (e) => { if (e.matches) onLandscape() }
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [onLandscape])
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
+      position: 'fixed', inset: 0, zIndex: 10000,
       background: 'white',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
       gap: '2rem',
-      padding: '2rem',
+      animation: 'ss-portrait-in 0.5s cubic-bezier(0.22,1,0.36,1) both',
     }}>
-      {/* Logos */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '0.5rem' }}>
-        <img src="/logo-iteso.png" alt="ITESO" style={{ height: 64, width: 'auto', objectFit: 'contain' }} />
-        <span style={{ fontSize: 28, color: 'oklch(0.75 0.01 250)', fontWeight: 200 }}>|</span>
-        <img src="/logo-epics.png" alt="EPICS in IEEE" style={{ height: 52, width: 'auto', objectFit: 'contain' }} />
+      {/* Small logos at top */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 8 }}>
+        <img src="/logo-iteso.png" alt="ITESO"
+          style={{ height: 56, width: 'auto', objectFit: 'contain' }} />
+        <span style={{ fontSize: 24, color: 'oklch(0.80 0.01 250)', fontWeight: 200, lineHeight: 1 }}>|</span>
+        <img src="/logo-epics.png" alt="EPICS in IEEE"
+          style={{ height: 44, width: 'auto', objectFit: 'contain' }} />
       </div>
 
-      {/* Phone rotate icon */}
+      {/* Rotation hint icon */}
       <div style={{
-        animation: 'rotate-pulse 1.6s ease-in-out infinite',
-        transformOrigin: 'center',
-        fontSize: 48,
-        lineHeight: 1,
+        fontSize: 52,
         color: 'oklch(0.30 0.07 250)',
+        lineHeight: 1,
+        animation: 'ss-rotate-hint 1.8s ease-in-out infinite',
+        transformOrigin: 'center',
+        userSelect: 'none',
       }}>
         ↻
       </div>
 
-      <div style={{ textAlign: 'center' }}>
+      {/* Message */}
+      <div style={{ textAlign: 'center', padding: '0 2rem' }}>
         <p style={{
-          fontSize: 'clamp(1rem, 3vw, 1.25rem)',
-          fontWeight: 600,
-          color: 'oklch(0.20 0.04 250)',
-          marginBottom: '0.375rem',
-          letterSpacing: '-0.01em',
+          fontSize: 'clamp(1rem, 4vw, 1.2rem)',
+          fontWeight: 700,
+          color: 'oklch(0.18 0.05 250)',
+          letterSpacing: '-0.02em',
+          marginBottom: 6,
         }}>
           Rota tu dispositivo
         </p>
         <p style={{
-          fontSize: 'clamp(0.8rem, 2.2vw, 0.95rem)',
+          fontSize: 'clamp(0.78rem, 3vw, 0.92rem)',
           color: 'oklch(0.55 0.02 250)',
           fontWeight: 400,
         }}>
           Esta interfaz requiere orientación horizontal
         </p>
       </div>
+    </div>
+  )
+}
 
+// ─── Landing (button only) ────────────────────────────────────────────────────
+function Landing({ onEnter }) {
+  const [leaving, setLeaving] = useState(false)
+
+  function handleTap() {
+    if (leaving) return
+    setLeaving(true)
+    setTimeout(onEnter, 260)
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 10000,
+      background: 'white',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
       <button
-        onPointerDown={() => setPressing(true)}
-        onPointerUp={handleEnter}
+        onPointerUp={handleTap}
         style={{
-          marginTop: '0.5rem',
-          padding: '0.875rem 2.5rem',
-          borderRadius: '9999px',
+          padding: '1rem 3.5rem',
+          borderRadius: 9999,
           border: 'none',
           cursor: 'pointer',
-          fontSize: '1rem',
-          fontWeight: 700,
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
-          background: pressing ? 'oklch(0.24 0.07 250)' : 'oklch(0.30 0.07 250)',
+          background: leaving ? 'oklch(0.24 0.07 250)' : 'oklch(0.30 0.07 250)',
           color: 'white',
-          transition: 'background 0.1s, transform 0.1s',
-          transform: pressing ? 'scale(0.96)' : 'scale(1)',
-          boxShadow: '0 4px 24px oklch(0.30 0.07 250 / 0.30)',
+          fontSize: '1.05rem',
+          fontWeight: 800,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          boxShadow: '0 6px 32px oklch(0.30 0.07 250 / 0.28)',
+          animation: leaving
+            ? 'ss-btn-out 0.26s cubic-bezier(0.4,0,1,1) both'
+            : 'ss-btn-in 0.55s cubic-bezier(0.22,1,0.36,1) 0.1s both',
+          transition: 'background 0.1s',
         }}
       >
         Entrar
@@ -113,83 +137,132 @@ function PortraitGate({ onProceed }) {
   )
 }
 
-// ─── Intro animation ──────────────────────────────────────────────────────────
-function IntroAnimation({ onComplete }) {
-  // phase: 'in' → logos fade in | 'rise' → logos fly to header | 'done'
-  const [phase, setPhase] = useState('in')
+// ─── Logos Stage ──────────────────────────────────────────────────────────────
+function LogosStage({ onComplete }) {
+  // 'measure' → wait for fullscreen to settle
+  // 'show'    → logos centered, pulsing
+  // 'fly'     → logos animate to header
+  // 'out'     → overlay fading, done
+  const [phase, setPhase] = useState('measure')
+  const [vp, setVp] = useState({ w: window.innerWidth, h: window.innerHeight })
   const [overlayFading, setOverlayFading] = useState(false)
 
+  // After fullscreen + orientation lock settle, re-measure viewport
   useEffect(() => {
-    // After fade-in hold, start the rise
-    const t1 = setTimeout(() => setPhase('rise'), 1400)
-    // Slightly before rise ends, fade out the overlay
-    const t2 = setTimeout(() => setOverlayFading(true), 2000)
-    // Call onComplete when overlay is gone
-    const t3 = setTimeout(onComplete, 2550)
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
-  }, [onComplete])
+    const measure = () => setVp({ w: window.innerWidth, h: window.innerHeight })
+    // Measure now, then again after a tick and after resize settles
+    measure()
+    const t = setTimeout(() => {
+      measure()
+      setPhase('show')
+    }, 320)
+    window.addEventListener('resize', measure)
+    return () => { clearTimeout(t); window.removeEventListener('resize', measure) }
+  }, [])
 
-  const logosStyle = phase === 'in'
-    ? {
-        animation: 'splash-fade-in 0.55s cubic-bezier(0.22,1,0.36,1) both',
+  // Hold 3s then fly
+  useEffect(() => {
+    if (phase !== 'show') return
+    const t = setTimeout(() => setPhase('fly'), 3000)
+    return () => clearTimeout(t)
+  }, [phase])
+
+  // Fly: fade overlay after 200ms, call onComplete after 900ms
+  useEffect(() => {
+    if (phase !== 'fly') return
+    const t1 = setTimeout(() => setOverlayFading(true), 200)
+    const t2 = setTimeout(onComplete, 900)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
+  }, [phase, onComplete])
+
+  // Logos positioning & animation
+  const logosStyle = (() => {
+    const baseTranslate = 'translate(-50%, -50%)'
+    if (phase === 'measure') {
+      return { opacity: 0, transform: baseTranslate }
+    }
+    if (phase === 'show') {
+      return {
+        animation: 'ss-logos-in 0.65s cubic-bezier(0.22,1,0.36,1) both, ss-logos-pulse 2.2s ease-in-out 0.8s 1 both',
       }
-    : {
-        animation: 'splash-logos-rise 0.72s cubic-bezier(0.4,0,0.2,1) both',
+    }
+    if (phase === 'fly' || phase === 'out') {
+      return {
+        transition: 'top 0.8s cubic-bezier(0.4,0,0.2,1), left 0.8s cubic-bezier(0.4,0,0.2,1), transform 0.8s cubic-bezier(0.4,0,0.2,1)',
+        top: 0,
+        left: '50%',
+        transform: 'translate(-50%, 0) scale(0.30)',
       }
+    }
+    return {}
+  })()
+
+  const logosPos = (phase === 'fly' || phase === 'out')
+    ? {}
+    : { top: vp.h / 2, left: vp.w / 2 }
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 9998,
+      position: 'fixed', inset: 0, zIndex: 9999,
       background: 'white',
       pointerEvents: 'none',
-      animation: overlayFading ? 'splash-fade-out 0.5s ease both' : undefined,
+      animation: overlayFading ? 'ss-overlay-out 0.7s ease both' : undefined,
     }}>
-      {/* Centered logos */}
       <div style={{
         position: 'absolute',
-        top: '50%', left: '50%',
-        display: 'flex', alignItems: 'center',
-        gap: 'clamp(12px, 2.5vw, 28px)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 28,
         transformOrigin: 'top center',
+        willChange: 'transform, top, left',
+        ...logosPos,
         ...logosStyle,
       }}>
         <img
           src="/logo-iteso.png"
-          alt="ITESO"
-          style={{ height: 'clamp(56px, 10vh, 80px)', width: 'auto', objectFit: 'contain' }}
+          alt="ITESO, Universidad Jesuita de Guadalajara"
+          style={{ height: 120, width: 'auto', objectFit: 'contain', display: 'block' }}
         />
-        <span style={{ fontSize: 'clamp(22px, 4vh, 32px)', color: 'oklch(0.75 0.01 250)', fontWeight: 200, lineHeight: 1 }}>|</span>
+        <span style={{
+          fontSize: 44, color: 'oklch(0.78 0.01 250)',
+          fontWeight: 200, lineHeight: 1, userSelect: 'none',
+        }}>|</span>
         <img
           src="/logo-epics.png"
           alt="EPICS in IEEE"
-          style={{ height: 'clamp(88px, 16vh, 128px)', width: 'auto', objectFit: 'contain' }}
+          style={{ height: 180, width: 'auto', objectFit: 'contain', display: 'block' }}
         />
       </div>
     </div>
   )
 }
 
-// ─── Main export ──────────────────────────────────────────────────────────────
+// ─── Main SplashScreen ────────────────────────────────────────────────────────
 export function SplashScreen({ onComplete }) {
-  const isPortrait = () =>
-    window.matchMedia('(orientation: portrait)').matches
+  const isPortrait = () => window.matchMedia('(orientation: portrait)').matches
+  const [step, setStep] = useState(() => isPortrait() ? 'portrait' : 'landing')
 
-  const [step, setStep] = useState(() => isPortrait() ? 'portrait' : 'intro')
-
-  // Listen for orientation changes while on portrait gate
-  useEffect(() => {
-    if (step !== 'portrait') return
-    const mq = window.matchMedia('(orientation: landscape)')
-    const handler = (e) => { if (e.matches) setStep('intro') }
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
-  }, [step])
+  const handleEnter = useCallback(async () => {
+    try { await document.documentElement.requestFullscreen() } catch (_) {}
+    try { await screen.orientation.lock('landscape') } catch (_) {}
+    setStep('logos')
+  }, [])
 
   return (
     <>
       <style>{KEYFRAMES}</style>
-      {step === 'portrait' && <PortraitGate onProceed={() => setStep('intro')} />}
-      {step === 'intro'    && <IntroAnimation onComplete={onComplete} />}
+
+      {step === 'portrait' && (
+        <PortraitGate onLandscape={() => setStep('landing')} />
+      )}
+
+      {step === 'landing' && (
+        <Landing onEnter={handleEnter} />
+      )}
+
+      {step === 'logos' && (
+        <LogosStage onComplete={onComplete} />
+      )}
     </>
   )
 }
