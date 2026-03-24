@@ -67,7 +67,15 @@ export function StatusBar({ connected, batteryVoltage }) {
 
   return (
     <header className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center px-4 bg-white border-b border-border/50 shadow-[0_1px_6px_rgba(0,0,0,0.04)]" style={{ height: 'clamp(52px, 8dvh, 74px)', gap: 'clamp(8px, 2vw, 24px)' }}>
-      <div className="flex items-center min-w-0 overflow-hidden" style={{ gap: 'clamp(8px, 1.5vw, 20px)' }}>
+      <div className="flex items-center min-w-0 overflow-hidden" style={{ gap: 'clamp(6px, 1.2vw, 16px)' }}>
+        <button
+          onClick={toggleFullscreen}
+          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-90 transition-all duration-100 shrink-0"
+          aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+        >
+          <FullscreenIcon isFullscreen={isFullscreen} />
+        </button>
+
         <div className="flex items-center gap-1.5">
           <span className={`w-2 h-2 rounded-full ring-2 shrink-0 ${connected ? 'bg-green-500 ring-green-500/20' : 'bg-muted-foreground/30 ring-muted-foreground/10'}`} />
           <span className="text-[11px] text-muted-foreground font-medium tracking-wide uppercase">
@@ -88,37 +96,28 @@ export function StatusBar({ connected, batteryVoltage }) {
         </div>
       </div>
 
-      <div className="flex items-center justify-self-center h-full" style={{ gap: 'clamp(8px, 1.5vw, 20px)', padding: 'clamp(6px, 1dvh, 10px) 0' }}>
+      <div className="flex items-center justify-self-center h-full" style={{ gap: 'clamp(8px, 1.5vw, 20px)', paddingBlock: 'clamp(3px, 0.5dvh, 6px)' }}>
         <img
           src="/logo-iteso.png"
           alt="ITESO, Universidad Jesuita de Guadalajara"
           className="w-auto object-contain shrink-0"
-          style={{ height: 'clamp(28px, 5dvh, 44px)' }}
+          style={{ height: 'clamp(34px, 6.6dvh, 62px)' }}
         />
-        <span className="text-muted-foreground/50 leading-none" style={{ fontSize: 'clamp(16px, 3dvh, 28px)' }}>|</span>
+        <span className="text-muted-foreground/40 leading-none" style={{ fontSize: 'clamp(18px, 3.5dvh, 32px)' }}>|</span>
         <img
           src="/logo-epics.png"
           alt="EPICS in IEEE"
           className="w-auto object-contain shrink-0"
-          style={{ height: 'clamp(30px, 5.5dvh, 50px)' }}
+          style={{ height: 'clamp(36px, 7dvh, 66px)' }}
         />
       </div>
 
-      <div className="flex items-center justify-self-end" style={{ gap: 'clamp(8px, 1.5vw, 16px)' }}>
-        <div className="pointer-events-none select-none">
-          <h1 className="tracking-tight leading-none" style={{ fontSize: 'clamp(1rem, 2.4dvh, 1.5rem)' }}>
-            <span style={{ fontWeight: 900 }}>Robo</span>
-            <span style={{ fontWeight: 200, color: 'oklch(0.50 0.02 250)' }}>Mesh</span>
-            <span style={{ fontWeight: 600, color: 'oklch(0.38 0.10 250)', fontStyle: 'italic' }}>A</span>
-          </h1>
-        </div>
-        <button
-          onClick={toggleFullscreen}
-          className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-90 transition-all duration-100"
-          aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
-        >
-          <FullscreenIcon isFullscreen={isFullscreen} />
-        </button>
+      <div className="flex items-center justify-self-end pointer-events-none select-none">
+        <h1 className="tracking-tight leading-none" style={{ fontSize: 'clamp(1rem, 2.4dvh, 1.5rem)' }}>
+          <span style={{ fontWeight: 900, color: 'oklch(0.12 0.03 250)' }}>Robo</span>
+          <span style={{ fontWeight: 300, color: 'oklch(0.58 0.015 250)', letterSpacing: '0.04em' }}>Mesh</span>
+          <span style={{ fontWeight: 800, color: 'oklch(0.12 0.03 250)', display: 'inline-block', transform: 'skewX(-11deg)' }}>A</span>
+        </h1>
       </div>
     </header>
   )
