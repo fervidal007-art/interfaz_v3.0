@@ -11,12 +11,12 @@ const KEYFRAMES = `
     to   { opacity: 0; transform: scale(0.92); }
   }
   @keyframes ss-logos-in {
-    from { opacity: 0; transform: translateY(20px) scale(0.92); }
-    to   { opacity: 1; transform: translateY(0)    scale(1);    }
+    from { opacity: 0; transform: translate(-50%, calc(-50% + 20px)) scale(0.92); }
+    to   { opacity: 1; transform: translate(-50%, -50%)              scale(1);    }
   }
   @keyframes ss-logos-pulse {
-    0%,100% { transform: scale(1);     }
-    50%     { transform: scale(1.025); }
+    0%,100% { transform: translate(-50%, -50%) scale(1);     }
+    50%     { transform: translate(-50%, -50%) scale(1.025); }
   }
   @keyframes ss-overlay-out {
     from { opacity: 1; }
@@ -165,49 +165,45 @@ function LogosStage({ onComplete }) {
     return () => { clearTimeout(t1); clearTimeout(t2) }
   }, [phase, onComplete])
 
-  const isFly = phase === 'fly'
-
-  // Overlay: flexbox center for 'wait'/'show', switch off for 'fly'
-  const overlayStyle = {
-    position: 'fixed', inset: 0, zIndex: 9999,
-    background: 'white',
-    pointerEvents: 'none',
-    overflow: 'hidden',
-    ...(isFly
-      ? {}
-      : { display: 'flex', alignItems: 'center', justifyContent: 'center' }
-    ),
-    animation: overlayFading ? 'ss-overlay-out 0.7s ease both' : undefined,
-  }
-
-  // Logos container
+  // Logos container — always position:absolute so CSS can transition smoothly
   const logosStyle = (() => {
     if (phase === 'wait') {
-      return { opacity: 0 }
+      return {
+        opacity: 0,
+        top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)',
+      }
     }
     if (phase === 'show') {
       return {
+        top: '50%', left: '50%',
         animation: 'ss-logos-in 0.65s cubic-bezier(0.22,1,0.36,1) both, ss-logos-pulse 2.2s ease-in-out 0.8s 1 both',
       }
     }
-    // fly — switch to absolute and animate to top center
+    // fly — animate to top center
     return {
-      position: 'absolute',
       top: 0,
       left: '50%',
       transform: 'translate(-50%, 0) scale(0.28)',
-      transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+      transition: 'top 0.8s cubic-bezier(0.4,0,0.2,1), transform 0.8s cubic-bezier(0.4,0,0.2,1)',
     }
   })()
 
   return (
-    <div style={overlayStyle}>
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'white',
+      pointerEvents: 'none',
+      overflow: 'hidden',
+      animation: overlayFading ? 'ss-overlay-out 0.7s ease both' : undefined,
+    }}>
       <div style={{
+        position: 'absolute',
         display: 'flex',
         alignItems: 'center',
         gap: 'clamp(16px, 3vw, 32px)',
         transformOrigin: 'top center',
-        willChange: 'transform, opacity',
+        willChange: 'transform, top',
         ...logosStyle,
       }}>
         <img
