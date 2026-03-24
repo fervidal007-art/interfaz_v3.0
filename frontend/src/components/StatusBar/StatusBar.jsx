@@ -67,7 +67,7 @@ export function StatusBar({ connected, batteryVoltage }) {
 
   return (
     <header className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center px-4 bg-white border-b border-border/50 shadow-[0_1px_6px_rgba(0,0,0,0.04)]" style={{ height: 'clamp(52px, 8dvh, 74px)', gap: 'clamp(8px, 2vw, 24px)' }}>
-      <div className="flex items-center min-w-0 overflow-hidden" style={{ gap: 'clamp(6px, 1.2vw, 16px)' }}>
+      <div className="flex items-center min-w-0 overflow-hidden" style={{ gap: 'clamp(6px, 1.2vw, 16px)', transform: 'translateY(clamp(-12px, -2.5dvh, -8px))' }}>
         <button
           onClick={toggleFullscreen}
           className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-90 transition-all duration-100 shrink-0"
@@ -112,7 +112,7 @@ export function StatusBar({ connected, batteryVoltage }) {
         />
       </div>
 
-      <div className="flex items-center justify-self-end pointer-events-none select-none">
+      <div className="flex items-center justify-self-end pointer-events-none select-none" style={{ transform: 'translateY(clamp(-12px, -2.5dvh, -8px))' }}>
         <h1 className="tracking-tight leading-none" style={{ fontSize: 'clamp(1rem, 2.4dvh, 1.5rem)' }}>
           <span style={{ fontWeight: 900, color: 'oklch(0.12 0.03 250)' }}>Robo</span>
           <span style={{ fontWeight: 300, color: 'oklch(0.58 0.015 250)', letterSpacing: '0.04em' }}>Mesh</span>
