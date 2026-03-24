@@ -109,7 +109,7 @@ export function StatusBar({ connected, batteryVoltage }) {
           <h1 className="tracking-tight leading-none" style={{ fontSize: 'clamp(1rem, 2.4dvh, 1.5rem)' }}>
             <span style={{ fontWeight: 900 }}>Robo</span>
             <span style={{ fontWeight: 200, color: 'oklch(0.50 0.02 250)' }}>Mesh</span>
-            <span style={{ fontWeight: 900 }}>A</span>
+            <span style={{ fontWeight: 600, color: 'oklch(0.38 0.10 250)', fontStyle: 'italic' }}>A</span>
           </h1>
         </div>
         <button

@@ -435,7 +435,7 @@ export function Gamepad({ send }) {
             {mode === 'sequence' && (
               <EStopButton
                 onPress={handleEStop}
-                disabled={isEditing || !isPlaying}
+                disabled={!isEditing && !isPlaying}
               />
             )}
           </div>
