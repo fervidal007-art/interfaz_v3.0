@@ -108,7 +108,7 @@ export function StatusBar({ connected, batteryVoltage }) {
           src="/logo-epics.png"
           alt="EPICS in IEEE"
           className="w-auto object-contain shrink-0"
-          style={{ height: 'clamp(64px, 13dvh, 112px)' }}
+          style={{ height: 'clamp(72px, 15dvh, 128px)' }}
         />
       </div>
 
