@@ -67,7 +67,7 @@ function PortraitGate({ onLandscape }) {
           style={{ height: 56, width: 'auto', objectFit: 'contain' }} />
         <span style={{ fontSize: 24, color: 'oklch(0.80 0.01 250)', fontWeight: 200, lineHeight: 1 }}>|</span>
         <img src="/logo-epics.png" alt="EPICS in IEEE"
-          style={{ height: 44, width: 'auto', objectFit: 'contain' }} />
+          style={{ height: 76, width: 'auto', objectFit: 'contain' }} />
       </div>
 
       <div style={{
