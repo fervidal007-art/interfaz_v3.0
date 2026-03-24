@@ -66,7 +66,7 @@ export function StatusBar({ connected, batteryVoltage }) {
   }, [])
 
   return (
-    <header className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 px-5 h-[4.6rem] bg-white border-b border-border/50 shadow-[0_1px_6px_rgba(0,0,0,0.04)]">
+    <header className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 px-5 bg-white border-b border-border/50 shadow-[0_1px_6px_rgba(0,0,0,0.04)]" style={{ height: 'clamp(52px, 8dvh, 74px)' }}>
       <div className="flex items-center gap-4 min-w-0 overflow-hidden">
         <div className="flex items-center gap-1.5">
           <span className={`w-2 h-2 rounded-full ring-2 shrink-0 ${connected ? 'bg-green-500 ring-green-500/20' : 'bg-muted-foreground/30 ring-muted-foreground/10'}`} />

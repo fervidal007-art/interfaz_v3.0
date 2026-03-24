@@ -37,8 +37,8 @@ function EStopButton({ onPress, onRelease, disabled }) {
       )}
       style={{
         width: 'min(100%, clamp(220px, 24vw, 320px))',
-        height: 'clamp(44px, 5.8vh, 58px)',
-        fontSize: 'clamp(0.95rem, 2.2vh, 1.35rem)',
+        height: 'clamp(44px, 5.8dvh, 58px)',
+        fontSize: 'clamp(0.95rem, 2.2dvh, 1.35rem)',
       }}
     >
       STOP
@@ -352,11 +352,11 @@ export function Gamepad({ send }) {
     <div
       className="flex-1 flex flex-col touch-none select-none overflow-hidden"
       style={{
-        '--btn-size': 'clamp(48px, min(14vw, 12vh), 110px)',
+        '--btn-size': 'clamp(48px, min(14vw, 12dvh), 110px)',
         '--center-panel-width': 'min(100%, clamp(280px, 38vw, 560px))',
       }}
     >
-      <div className="px-[3vw] pt-[1.4vh]">
+      <div className="px-[3vw]" style={{ paddingTop: 'clamp(4px, 1.4dvh, 14px)' }}>
         <SpeedSelector
           value={selectedSpeed}
           onChange={handleSpeedChange}
@@ -365,7 +365,8 @@ export function Gamepad({ send }) {
       </div>
 
       <div
-        className="flex-1 min-h-0 grid px-[3vw] py-[1.8vh]"
+        className="flex-1 min-h-0 grid px-[3vw]"
+          style={{ paddingBlock: 'clamp(6px, 1.8dvh, 18px)' }}
         style={{
           gridTemplateColumns: 'minmax(0, 1fr) var(--center-panel-width) minmax(0, 1fr)',
           gridTemplateRows: 'minmax(0, 1fr)',
@@ -376,7 +377,7 @@ export function Gamepad({ send }) {
           <DPad onDirection={handleDirection} disabled={isPlaying || (mode === 'sequence' && !isEditing)} />
         </div>
 
-        <div className="min-w-0 flex items-center justify-center" style={{ gridColumn: 2, gridRow: 1 }}>
+        <div className="min-w-0 min-h-0 flex flex-col items-center justify-center overflow-hidden" style={{ gridColumn: 2, gridRow: 1 }}>
           <CenterPanel
             mode={mode}
             onModeChange={handleModeChange}
@@ -408,7 +409,7 @@ export function Gamepad({ send }) {
 
         <div
           className="flex flex-col items-center justify-center"
-          style={{ gridColumn: 3, gridRow: 1, gap: mode === 'sequence' ? 'clamp(10px, 2vh, 20px)' : '0' }}
+          style={{ gridColumn: 3, gridRow: 1, gap: mode === 'sequence' ? 'clamp(10px, 2dvh, 20px)' : '0' }}
         >
           <RotationControl onRotate={handleRotate} disabled={isPlaying || (mode === 'sequence' && !isEditing)} />
           {mode === 'sequence' && (

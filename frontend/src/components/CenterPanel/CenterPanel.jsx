@@ -7,16 +7,16 @@ import {
 import { Button } from '@/components/ui/button'
 
 const S = {
-  gap:     'clamp(4px, 1.2vh, 12px)',
-  gapSm:   'clamp(3px, 0.8vh, 8px)',
-  pad:     'clamp(6px, 1.4vh, 14px)',
-  padSm:   'clamp(4px, 1vh, 10px)',
-  fs:      'clamp(11px, 1.5vh, 14px)',
-  fsXs:    'clamp(9px, 1.2vh, 12px)',
-  fsLabel: 'clamp(8px, 1vh, 11px)',
-  r:       'clamp(12px, 2vh, 18px)',
-  rSm:     'clamp(8px, 1.4vh, 12px)',
-  icon:    'clamp(24px, 3.8vh, 34px)',
+  gap:     'clamp(4px, 1.2dvh, 12px)',
+  gapSm:   'clamp(3px, 0.8dvh, 8px)',
+  pad:     'clamp(6px, 1.4dvh, 14px)',
+  padSm:   'clamp(4px, 1dvh, 10px)',
+  fs:      'clamp(11px, 1.5dvh, 14px)',
+  fsXs:    'clamp(9px, 1.2dvh, 12px)',
+  fsLabel: 'clamp(8px, 1dvh, 11px)',
+  r:       'clamp(12px, 2dvh, 18px)',
+  rSm:     'clamp(8px, 1.4dvh, 12px)',
+  icon:    'clamp(24px, 3.8dvh, 34px)',
 }
 
 // ─── Glyphs ───────────────────────────────────────────────────────────────────
@@ -291,7 +291,7 @@ function SequenceEditor({
   const stepList = (
     <div ref={listRef} style={{
       display: 'flex', flexDirection: 'column', gap: S.gapSm,
-      maxHeight: 'clamp(100px, 22vh, 195px)', overflowY: 'auto',
+      maxHeight: 'clamp(80px, 28dvh, 260px)', overflowY: 'auto',
     }}>
       {draftSteps.length === 0 ? (
         <div style={{
@@ -629,8 +629,9 @@ export function CenterPanel({
   return (
     <section style={{
       width: 'var(--center-panel-width)',
+      maxHeight: '100%',
       overflow: 'hidden',
-      borderRadius: 'clamp(16px, 2.8vh, 28px)',
+      borderRadius: 'clamp(16px, 2.8dvh, 28px)',
       border: '1px solid oklch(0.90 0.01 250)',
       background: 'oklch(1 0 0 / 0.82)',
       boxShadow: '0 8px 28px oklch(0.30 0.07 250 / 0.09)',
