@@ -96,7 +96,7 @@ export function StatusBar({ connected, batteryVoltage }) {
         </div>
       </div>
 
-      <div className="flex items-center justify-self-center h-full" style={{ gap: 'clamp(8px, 1.5vw, 20px)', paddingBlock: 'clamp(3px, 0.5dvh, 6px)' }}>
+      <div className="flex items-center justify-self-center h-full" style={{ gap: 'clamp(8px, 1.5vw, 20px)', paddingBlock: 'clamp(2px, 0.3dvh, 4px)' }}>
         <img
           src="/logo-iteso.png"
           alt="ITESO, Universidad Jesuita de Guadalajara"
@@ -108,7 +108,7 @@ export function StatusBar({ connected, batteryVoltage }) {
           src="/logo-epics.png"
           alt="EPICS in IEEE"
           className="w-auto object-contain shrink-0"
-          style={{ height: 'clamp(36px, 7dvh, 66px)' }}
+          style={{ height: 'clamp(42px, 8dvh, 70px)' }}
         />
       </div>
 
@@ -116,7 +116,7 @@ export function StatusBar({ connected, batteryVoltage }) {
         <h1 className="tracking-tight leading-none" style={{ fontSize: 'clamp(1rem, 2.4dvh, 1.5rem)' }}>
           <span style={{ fontWeight: 900, color: 'oklch(0.12 0.03 250)' }}>Robo</span>
           <span style={{ fontWeight: 300, color: 'oklch(0.58 0.015 250)', letterSpacing: '0.04em' }}>Mesh</span>
-          <span style={{ fontWeight: 800, color: 'oklch(0.12 0.03 250)', display: 'inline-block', transform: 'skewX(-11deg)' }}>A</span>
+          <span style={{ fontWeight: 800, color: 'oklch(0.12 0.03 250)', display: 'inline-block', transform: 'skewX(11deg)' }}>A</span>
         </h1>
       </div>
     </header>
