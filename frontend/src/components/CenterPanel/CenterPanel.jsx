@@ -292,7 +292,7 @@ function SequenceEditor({
   const stepList = (
     <div ref={listRef} style={{
       display: 'flex', flexDirection: 'column', gap: S.gapSm,
-      maxHeight: 'clamp(100px, 38dvh, 360px)', overflowY: 'auto',
+      maxHeight: 'clamp(100px, 32dvh, 320px)', overflowY: 'auto',
     }}>
       {draftSteps.length === 0 ? (
         <div style={{
@@ -656,7 +656,7 @@ export function CenterPanel(props) {
         <section className="sequence-edit-modal" style={{
           pointerEvents: 'all',
           width: 'clamp(300px, 50vw, 520px)',
-          maxHeight: '88dvh',
+          maxHeight: '82dvh',
           overflow: 'hidden',
           display: 'flex', flexDirection: 'column', gap: S.gap,
           borderRadius: 'clamp(20px, 3dvh, 32px)',
