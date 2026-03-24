@@ -66,7 +66,7 @@ export function StatusBar({ connected, batteryVoltage }) {
   }, [])
 
   return (
-    <header className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center px-4 bg-white border-b border-border/50 shadow-[0_1px_6px_rgba(0,0,0,0.04)]" style={{ height: 'clamp(52px, 8dvh, 74px)', gap: 'clamp(8px, 2vw, 24px)', paddingBottom: 'clamp(10px, 2dvh, 18px)' }}>
+    <header className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center px-4 bg-white border-b border-border/50 shadow-[0_1px_6px_rgba(0,0,0,0.04)]" style={{ height: 'clamp(52px, 8dvh, 74px)', gap: 'clamp(8px, 2vw, 24px)', paddingBottom: 'clamp(20px, 4dvh, 34px)' }}>
       <div className="flex items-center min-w-0 overflow-hidden" style={{ gap: 'clamp(6px, 1.2vw, 16px)' }}>
         <button
           onClick={toggleFullscreen}
