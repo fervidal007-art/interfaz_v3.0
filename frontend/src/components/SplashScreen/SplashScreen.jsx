@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 // ─── CSS Keyframes ────────────────────────────────────────────────────────────
 const KEYFRAMES = `
@@ -51,7 +51,6 @@ function PortraitGate({ onLandscape }) {
       gap: '2rem',
       animation: 'ss-portrait-in 0.5s cubic-bezier(0.22,1,0.36,1) both',
     }}>
-      {/* Small logos at top */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 8 }}>
         <img src="/logo-iteso.png" alt="ITESO"
           style={{ height: 56, width: 'auto', objectFit: 'contain' }} />
@@ -60,7 +59,6 @@ function PortraitGate({ onLandscape }) {
           style={{ height: 44, width: 'auto', objectFit: 'contain' }} />
       </div>
 
-      {/* Rotation hint icon */}
       <div style={{
         fontSize: 52,
         color: 'oklch(0.30 0.07 250)',
@@ -72,7 +70,6 @@ function PortraitGate({ onLandscape }) {
         ↻
       </div>
 
-      {/* Message */}
       <div style={{ textAlign: 'center', padding: '0 2rem' }}>
         <p style={{
           fontSize: 'clamp(1rem, 4vw, 1.2rem)',
@@ -96,13 +93,16 @@ function PortraitGate({ onLandscape }) {
 }
 
 // ─── Landing (button only) ────────────────────────────────────────────────────
+// onEnter MUST be called synchronously inside the pointer event
+// so fullscreen + orientation lock keep the user-gesture chain.
 function Landing({ onEnter }) {
   const [leaving, setLeaving] = useState(false)
 
   function handleTap() {
     if (leaving) return
     setLeaving(true)
-    setTimeout(onEnter, 260)
+    // Fire fullscreen/orientation immediately (user-gesture context)
+    onEnter()
   }
 
   return (
@@ -139,23 +139,16 @@ function Landing({ onEnter }) {
 
 // ─── Logos Stage ──────────────────────────────────────────────────────────────
 function LogosStage({ onComplete }) {
-  // 'measure' → wait for fullscreen to settle
-  // 'show'    → logos centered, pulsing
-  // 'fly'     → logos animate to header
-  // 'out'     → overlay fading, done
   const [phase, setPhase] = useState('measure')
   const [vp, setVp] = useState({ w: window.innerWidth, h: window.innerHeight })
   const [overlayFading, setOverlayFading] = useState(false)
 
-  // After fullscreen + orientation lock settle, re-measure viewport
+  // Wait for fullscreen/orientation to settle, then measure real viewport
   useEffect(() => {
     const measure = () => setVp({ w: window.innerWidth, h: window.innerHeight })
-    // Measure now, then again after a tick and after resize settles
     measure()
-    const t = setTimeout(() => {
-      measure()
-      setPhase('show')
-    }, 320)
+    // Re-measure after resize settles (fullscreen + orientation change)
+    const t = setTimeout(() => { measure(); setPhase('show') }, 500)
     window.addEventListener('resize', measure)
     return () => { clearTimeout(t); window.removeEventListener('resize', measure) }
   }, [])
@@ -167,7 +160,7 @@ function LogosStage({ onComplete }) {
     return () => clearTimeout(t)
   }, [phase])
 
-  // Fly: fade overlay after 200ms, call onComplete after 900ms
+  // Fly → fade overlay → complete
   useEffect(() => {
     if (phase !== 'fly') return
     const t1 = setTimeout(() => setOverlayFading(true), 200)
@@ -175,44 +168,49 @@ function LogosStage({ onComplete }) {
     return () => { clearTimeout(t1); clearTimeout(t2) }
   }, [phase, onComplete])
 
-  // Logos positioning & animation
+  // Logo heights: scale to viewport but cap at comfortable sizes.
+  // ITESO is 3.5:1 (very wide), EPICS is 1.5:1 (nearly square).
+  // At 30dvh ITESO height → ~30%*vh width ≈ 3.5 * 30dvh. Need to stay within ~85vw total.
+  // Use vp.h for calculations so they're based on measured viewport.
+  const itesoH = Math.min(vp.h * 0.18, 120)   // ~18vh, max 120px
+  const epicsH = Math.min(vp.h * 0.38, 240)   // ~38vh, max 240px
+  const gap = Math.min(vp.w * 0.03, 32)
+
+  const isFly = phase === 'fly' || phase === 'out'
+
   const logosStyle = (() => {
-    const baseTranslate = 'translate(-50%, -50%)'
     if (phase === 'measure') {
-      return { opacity: 0, transform: baseTranslate }
+      return { opacity: 0, transform: 'translate(-50%, -50%)' }
     }
     if (phase === 'show') {
       return {
         animation: 'ss-logos-in 0.65s cubic-bezier(0.22,1,0.36,1) both, ss-logos-pulse 2.2s ease-in-out 0.8s 1 both',
       }
     }
-    if (phase === 'fly' || phase === 'out') {
-      return {
-        transition: 'top 0.8s cubic-bezier(0.4,0,0.2,1), left 0.8s cubic-bezier(0.4,0,0.2,1), transform 0.8s cubic-bezier(0.4,0,0.2,1)',
-        top: 0,
-        left: '50%',
-        transform: 'translate(-50%, 0) scale(0.30)',
-      }
+    // fly
+    return {
+      transition: 'top 0.8s cubic-bezier(0.4,0,0.2,1), left 0.8s cubic-bezier(0.4,0,0.2,1), transform 0.8s cubic-bezier(0.4,0,0.2,1)',
+      top: 0,
+      left: '50%',
+      transform: 'translate(-50%, 0) scale(0.28)',
     }
-    return {}
   })()
 
-  const logosPos = (phase === 'fly' || phase === 'out')
-    ? {}
-    : { top: vp.h / 2, left: vp.w / 2 }
+  const logosPos = isFly ? {} : { top: vp.h / 2, left: vp.w / 2 }
 
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
       background: 'white',
       pointerEvents: 'none',
+      overflow: 'hidden',
       animation: overlayFading ? 'ss-overlay-out 0.7s ease both' : undefined,
     }}>
       <div style={{
         position: 'absolute',
         display: 'flex',
         alignItems: 'center',
-        gap: 28,
+        gap,
         transformOrigin: 'top center',
         willChange: 'transform, top, left',
         ...logosPos,
@@ -221,16 +219,17 @@ function LogosStage({ onComplete }) {
         <img
           src="/logo-iteso.png"
           alt="ITESO, Universidad Jesuita de Guadalajara"
-          style={{ height: 120, width: 'auto', objectFit: 'contain', display: 'block' }}
+          style={{ height: itesoH, width: 'auto', objectFit: 'contain', display: 'block' }}
         />
         <span style={{
-          fontSize: 44, color: 'oklch(0.78 0.01 250)',
+          fontSize: Math.min(vp.h * 0.08, 44),
+          color: 'oklch(0.78 0.01 250)',
           fontWeight: 200, lineHeight: 1, userSelect: 'none',
         }}>|</span>
         <img
           src="/logo-epics.png"
           alt="EPICS in IEEE"
-          style={{ height: 180, width: 'auto', objectFit: 'contain', display: 'block' }}
+          style={{ height: epicsH, width: 'auto', objectFit: 'contain', display: 'block' }}
         />
       </div>
     </div>
@@ -242,9 +241,12 @@ export function SplashScreen({ onComplete }) {
   const isPortrait = () => window.matchMedia('(orientation: portrait)').matches
   const [step, setStep] = useState(() => isPortrait() ? 'portrait' : 'landing')
 
-  const handleEnter = useCallback(async () => {
-    try { await document.documentElement.requestFullscreen() } catch (_) {}
-    try { await screen.orientation.lock('landscape') } catch (_) {}
+  // Called synchronously from the pointer event to keep user-gesture context
+  const handleEnter = useCallback(() => {
+    // Fire fullscreen + orientation lock immediately (user-gesture chain)
+    document.documentElement.requestFullscreen().catch(() => {})
+    try { screen.orientation.lock('landscape').catch(() => {}) } catch (_) {}
+    // Transition to logos phase
     setStep('logos')
   }, [])
 
