@@ -41,7 +41,6 @@ MIN_WRITE_INTERVAL = 0.015
 I2C_INIT_RETRIES = 5
 I2C_INIT_DELAY = 0.5
 
-
 def _clamp_int8(value: float) -> int:
     return max(-100, min(100, int(round(value))))
 
