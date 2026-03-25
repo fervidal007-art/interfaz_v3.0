@@ -44,9 +44,8 @@ I2C_INIT_RETRIES = 5
 I2C_INIT_DELAY = 0.5
 
 # Calibración ADC de batería.
-# El divisor resistivo del PCB HiWonder lee bajo (~10%).
+# El divisor resistivo del PCB HiWonder lee ~10% bajo.
 # Factor = voltaje_real_multímetro / lectura_raw_i2c.
-# Para calibrar: leer log del raw, medir con multímetro, dividir.
 BATTERY_CALIBRATION = 1.11
 
 # Rango de batería 3S LiPo (mV, ya calibrados).
