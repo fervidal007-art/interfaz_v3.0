@@ -43,6 +43,16 @@ _RETRY_DELAYS = [0.025, 0.100, 0.300]
 I2C_INIT_RETRIES = 5
 I2C_INIT_DELAY = 0.5
 
+# Calibración ADC de batería.
+# El divisor resistivo del PCB HiWonder lee bajo (~10%).
+# Factor = voltaje_real_multímetro / lectura_raw_i2c.
+# Para calibrar: leer log del raw, medir con multímetro, dividir.
+BATTERY_CALIBRATION = 1.11
+
+# Rango de batería 3S LiPo (mV, ya calibrados).
+BATTERY_MAX = 12600       # 4.2V/celda — carga completa = 100%
+BATTERY_MIN = 9000        # 3.0V/celda — mínimo seguro = 0%
+
 
 def _clamp_int8(value: float) -> int:
     return max(-100, min(100, int(round(value))))
@@ -123,13 +133,16 @@ class MotorController:
         speeds = [_clamp_int8(v * speed * p) for v, p in zip(vec, MOTOR_POLARITY)]
         self._write_speeds(speeds)
 
-    def read_battery_mv(self) -> int | None:
-        """Lee el voltaje de batería. Retorna mV o None si I2C no está disponible."""
+    def read_battery(self) -> dict | None:
+        """Lee voltaje calibrado y porcentaje. Retorna {mv, voltage, percent} o None."""
         if self._bus is None:
             return None
         try:
             data = self._bus.read_i2c_block_data(MOTOR_ADDR, ADC_BAT_ADDR, 2)
-            return data[0] + (data[1] << 8)
+            raw_mv = data[0] + (data[1] << 8)
+            mv = int(raw_mv * BATTERY_CALIBRATION)
+            pct = max(0, min(100, (mv - BATTERY_MIN) * 100 // (BATTERY_MAX - BATTERY_MIN)))
+            return {"mv": mv, "voltage": round(mv / 1000, 2), "percent": pct}
         except Exception as e:
             logger.error(f"MotorController: error leyendo batería: {e}")
             return None
