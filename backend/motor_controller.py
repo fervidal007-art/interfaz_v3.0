@@ -36,7 +36,7 @@ DIRECTION_VECTORS = {
 # Intervalo mínimo entre escrituras I2C (segundos).
 # El STM32 corre PID cada 10ms; escribir más rápido no tiene efecto útil
 # y satura el bus del RP1 causando errno 121.
-MIN_WRITE_INTERVAL = 0.015
+MIN_WRITE_INTERVAL = 0.030
 
 I2C_INIT_RETRIES = 5
 I2C_INIT_DELAY = 0.5
