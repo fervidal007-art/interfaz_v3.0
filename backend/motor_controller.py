@@ -37,23 +37,41 @@ def _clamp_int8(value: float) -> int:
     return max(-100, min(100, int(round(value))))
 
 
+I2C_INIT_RETRIES = 5
+I2C_INIT_DELAY = 0.5   # segundos entre reintentos de init
+
+
 class MotorController:
     def __init__(self):
         self._bus = None
-        self._last_speeds: list[int] = [0, 0, 0, 0]  # evita escrituras I2C redundantes
+        self._last_speeds: list[int] = [0, 0, 0, 0]
         try:
             try:
                 import smbus2 as smbus
             except ImportError:
                 import smbus
             self._bus = smbus.SMBus(I2C_BUS)
-            self._bus.write_byte_data(MOTOR_ADDR, MOTOR_TYPE_ADDR, MOTOR_TYPE_JGB37_520_12V_110RPM)
-            time.sleep(0.5)
-            self._bus.write_byte_data(MOTOR_ADDR, MOTOR_ENCODER_POLARITY_ADDR, MOTOR_ENCODER_POLARITY)
+            # El STM32 del HiWonder puede no estar listo al boot.
+            # Reintentar la configuración inicial hasta que responda.
+            self._i2c_init_with_retry()
             logger.info("MotorController: I2C inicializado correctamente")
         except Exception as e:
             self._bus = None
             logger.warning(f"MotorController: I2C no disponible, modo simulación ({e})")
+
+    def _i2c_init_with_retry(self):
+        last_err = None
+        for attempt in range(I2C_INIT_RETRIES):
+            try:
+                self._bus.write_byte_data(MOTOR_ADDR, MOTOR_TYPE_ADDR, MOTOR_TYPE_JGB37_520_12V_110RPM)
+                time.sleep(0.1)
+                self._bus.write_byte_data(MOTOR_ADDR, MOTOR_ENCODER_POLARITY_ADDR, MOTOR_ENCODER_POLARITY)
+                return  # éxito
+            except OSError as e:
+                last_err = e
+                logger.info(f"MotorController: init intento {attempt + 1}/{I2C_INIT_RETRIES} falló ({e})")
+                time.sleep(I2C_INIT_DELAY)
+        raise last_err  # todos los intentos fallaron → modo simulación
 
     def _write_speeds(self, speeds: list[int]):
         # Solo escribe al bus I2C si el estado cambia (edge-driven, no level-driven).
@@ -61,19 +79,20 @@ class MotorController:
         # el Pi solo necesita actualizar el target cuando hay un cambio real.
         if speeds == self._last_speeds:
             return
-        self._last_speeds = list(speeds)
         if self._bus is None:
+            self._last_speeds = list(speeds)
             logger.info(f"[SIM] velocidades motores: {speeds}")
             return
-        # Reintento único: el STM32 corre PID cada 10ms; si está en su ISR
-        # al llegar la escritura, no ACK y genera errno 121. Esperar un ciclo
-        # completo (12ms de margen) y reintentar resuelve el race condition.
-        for attempt in range(2):
+        # Reintentar hasta 3 veces con 12ms entre intentos (1 ciclo PID del STM32).
+        # Solo actualiza _last_speeds si la escritura fue exitosa — si falla,
+        # el siguiente llamado volverá a intentar escribir este estado.
+        for attempt in range(3):
             try:
                 self._bus.write_i2c_block_data(MOTOR_ADDR, MOTOR_FIXED_SPEED_ADDR, speeds)
+                self._last_speeds = list(speeds)
                 return
             except OSError as e:
-                if attempt == 0 and e.errno == 121:
+                if e.errno == 121 and attempt < 2:
                     time.sleep(0.012)
                 else:
                     logger.error(f"MotorController: error I2C al escribir: {e}")
