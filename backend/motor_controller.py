@@ -33,26 +33,33 @@ DIRECTION_VECTORS = {
     'ccw': [-1,  1, -1,  1],   # Rotate counter-clockwise
 }
 
-def _clamp_int8(value: float) -> int:
-    return max(-100, min(100, int(round(value))))
-
+# Intervalo mínimo entre escrituras I2C (segundos).
+# El STM32 corre PID cada 10ms; escribir más rápido no tiene efecto útil
+# y satura el bus del RP1 causando errno 121.
+MIN_WRITE_INTERVAL = 0.015
 
 I2C_INIT_RETRIES = 5
-I2C_INIT_DELAY = 0.5   # segundos entre reintentos de init
+I2C_INIT_DELAY = 0.5
+
+
+def _clamp_int8(value: float) -> int:
+    return max(-100, min(100, int(round(value))))
 
 
 class MotorController:
     def __init__(self):
         self._bus = None
+        self._smbus_mod = None
         self._last_speeds: list[int] = [0, 0, 0, 0]
+        self._last_write_t: float = 0.0
+        self._consecutive_errors: int = 0
         try:
             try:
                 import smbus2 as smbus
             except ImportError:
                 import smbus
+            self._smbus_mod = smbus
             self._bus = smbus.SMBus(I2C_BUS)
-            # El STM32 del HiWonder puede no estar listo al boot.
-            # Reintentar la configuración inicial hasta que responda.
             self._i2c_init_with_retry()
             logger.info("MotorController: I2C inicializado correctamente")
         except Exception as e:
@@ -66,36 +73,66 @@ class MotorController:
                 self._bus.write_byte_data(MOTOR_ADDR, MOTOR_TYPE_ADDR, MOTOR_TYPE_JGB37_520_12V_110RPM)
                 time.sleep(0.1)
                 self._bus.write_byte_data(MOTOR_ADDR, MOTOR_ENCODER_POLARITY_ADDR, MOTOR_ENCODER_POLARITY)
-                return  # éxito
+                return
             except OSError as e:
                 last_err = e
                 logger.info(f"MotorController: init intento {attempt + 1}/{I2C_INIT_RETRIES} falló ({e})")
                 time.sleep(I2C_INIT_DELAY)
-        raise last_err  # todos los intentos fallaron → modo simulación
+        raise last_err
+
+    def _reset_bus(self):
+        """Cierra y reabre el fd de I2C para resetear el controlador del RP1."""
+        if self._bus is None or self._smbus_mod is None:
+            return False
+        try:
+            self._bus.close()
+        except Exception:
+            pass
+        try:
+            time.sleep(0.05)
+            self._bus = self._smbus_mod.SMBus(I2C_BUS)
+            logger.info("MotorController: bus I2C reseteado")
+            return True
+        except Exception as e:
+            logger.error(f"MotorController: no se pudo reabrir el bus I2C ({e})")
+            self._bus = None
+            return False
 
     def _write_speeds(self, speeds: list[int]):
-        # Solo escribe al bus I2C si el estado cambia (edge-driven, no level-driven).
-        # El STM32 del driver HiWonder maneja el PID internamente a 100 Hz;
-        # el Pi solo necesita actualizar el target cuando hay un cambio real.
         if speeds == self._last_speeds:
             return
         if self._bus is None:
             self._last_speeds = list(speeds)
             logger.info(f"[SIM] velocidades motores: {speeds}")
             return
-        # Reintentar hasta 3 veces con 12ms entre intentos (1 ciclo PID del STM32).
-        # Solo actualiza _last_speeds si la escritura fue exitosa — si falla,
-        # el siguiente llamado volverá a intentar escribir este estado.
+
+        # Respetar intervalo mínimo entre escrituras para no saturar el bus.
+        now = time.monotonic()
+        wait = MIN_WRITE_INTERVAL - (now - self._last_write_t)
+        if wait > 0:
+            time.sleep(wait)
+
         for attempt in range(3):
             try:
                 self._bus.write_i2c_block_data(MOTOR_ADDR, MOTOR_FIXED_SPEED_ADDR, speeds)
+                self._last_write_t = time.monotonic()
                 self._last_speeds = list(speeds)
+                self._consecutive_errors = 0
                 return
             except OSError as e:
-                if e.errno == 121 and attempt < 2:
-                    time.sleep(0.012)
+                if e.errno != 121:
+                    logger.error(f"MotorController: error I2C inesperado: {e}")
+                    return
+                self._consecutive_errors += 1
+                if self._consecutive_errors >= 3 and attempt < 2:
+                    # Bus del RP1 probablemente colgado — resetear fd
+                    if not self._reset_bus():
+                        return
+                    time.sleep(0.05)
                 else:
-                    logger.error(f"MotorController: error I2C al escribir: {e}")
+                    time.sleep(0.015)
+
+        logger.error(f"MotorController: error I2C persistente ({self._consecutive_errors} consecutivos)")
 
     def set_direction(self, direction: str, speed: int):
         vec = DIRECTION_VECTORS.get(direction)
