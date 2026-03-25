@@ -1,4 +1,5 @@
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,6 @@ class MotorController:
                 import smbus2 as smbus
             except ImportError:
                 import smbus
-            import time
             self._bus = smbus.SMBus(I2C_BUS)
             self._bus.write_byte_data(MOTOR_ADDR, MOTOR_TYPE_ADDR, MOTOR_TYPE_JGB37_520_12V_110RPM)
             time.sleep(0.5)
@@ -65,10 +65,18 @@ class MotorController:
         if self._bus is None:
             logger.info(f"[SIM] velocidades motores: {speeds}")
             return
-        try:
-            self._bus.write_i2c_block_data(MOTOR_ADDR, MOTOR_FIXED_SPEED_ADDR, speeds)
-        except Exception as e:
-            logger.error(f"MotorController: error I2C al escribir: {e}")
+        # Reintento único: el STM32 corre PID cada 10ms; si está en su ISR
+        # al llegar la escritura, no ACK y genera errno 121. Esperar un ciclo
+        # completo (12ms de margen) y reintentar resuelve el race condition.
+        for attempt in range(2):
+            try:
+                self._bus.write_i2c_block_data(MOTOR_ADDR, MOTOR_FIXED_SPEED_ADDR, speeds)
+                return
+            except OSError as e:
+                if attempt == 0 and e.errno == 121:
+                    time.sleep(0.012)
+                else:
+                    logger.error(f"MotorController: error I2C al escribir: {e}")
 
     def set_direction(self, direction: str, speed: int):
         vec = DIRECTION_VECTORS.get(direction)
