@@ -15,49 +15,54 @@ MOTOR_TYPE_JGB37_520_12V_110RPM = 3
 MOTOR_ENCODER_POLARITY = 0  # Default del driver (ver TankDemo.py:35)
 
 # Multiplicador por motor: 1 = normal, -1 = invertido.
-# Cambiar el valor del motor que gire al revés.
 MOTOR_POLARITY = [1, -1, -1, 1]  # M2 y M3 tienen encoder invertido
 
 # Mecanum wheel speed vectors: [M1=FL, M2=RL, M3=FR, M4=RR]
-# Orden y signos tomados de interfaz_v3.0/2/server.py (versión verificada en hardware).
 DIRECTION_VECTORS = {
-    'n':   [ 1,  1,  1,  1],   # Forward
-    's':   [-1, -1, -1, -1],   # Backward
-    'e':   [-1,  1,  1, -1],   # Strafe right
-    'w':   [ 1, -1, -1,  1],   # Strafe left
-    'ne':  [ 0,  1,  1,  0],   # Diagonal fwd-right
-    'nw':  [ 1,  0,  0,  1],   # Diagonal fwd-left
-    'se':  [-1,  0,  0, -1],   # Diagonal rev-right
-    'sw':  [ 0, -1, -1,  0],   # Diagonal rev-left
-    'cw':  [ 1, -1,  1, -1],   # Rotate clockwise
-    'ccw': [-1,  1, -1,  1],   # Rotate counter-clockwise
+    'n':   [ 1,  1,  1,  1],
+    's':   [-1, -1, -1, -1],
+    'e':   [-1,  1,  1, -1],
+    'w':   [ 1, -1, -1,  1],
+    'ne':  [ 0,  1,  1,  0],
+    'nw':  [ 1,  0,  0,  1],
+    'se':  [-1,  0,  0, -1],
+    'sw':  [ 0, -1, -1,  0],
+    'cw':  [ 1, -1,  1, -1],
+    'ccw': [-1,  1, -1,  1],
 }
 
-# Intervalo mínimo entre escrituras I2C (segundos).
-# El STM32 corre PID cada 10ms; escribir más rápido no tiene efecto útil
-# y satura el bus del RP1 causando errno 121.
+# Intervalo mínimo entre escrituras I2C.
+# El STM32 corre PID cada 10ms; esto da margen para que no esté en su ISR.
 MIN_WRITE_INTERVAL = 0.030
+
+# Backoff progresivo cuando el STM32 NACKs.
+# El HAL STM32 tiene un timeout interno de ~25ms; esperar 200ms al tercer
+# intento da tiempo suficiente para que suelte el bus automáticamente.
+_RETRY_DELAYS = [0.025, 0.100, 0.300]
 
 I2C_INIT_RETRIES = 5
 I2C_INIT_DELAY = 0.5
+
 
 def _clamp_int8(value: float) -> int:
     return max(-100, min(100, int(round(value))))
 
 
+def _to_bytes(speeds: list[int]) -> list[int]:
+    """Convierte velocidades signed a unsigned para el bus I2C."""
+    return [v & 0xFF for v in speeds]
+
+
 class MotorController:
     def __init__(self):
         self._bus = None
-        self._smbus_mod = None
         self._last_speeds: list[int] = [0, 0, 0, 0]
         self._last_write_t: float = 0.0
-        self._consecutive_errors: int = 0
         try:
             try:
                 import smbus2 as smbus
             except ImportError:
                 import smbus
-            self._smbus_mod = smbus
             self._bus = smbus.SMBus(I2C_BUS)
             self._i2c_init_with_retry()
             logger.info("MotorController: I2C inicializado correctamente")
@@ -79,24 +84,6 @@ class MotorController:
                 time.sleep(I2C_INIT_DELAY)
         raise last_err
 
-    def _reset_bus(self):
-        """Cierra y reabre el fd de I2C para resetear el controlador del RP1."""
-        if self._bus is None or self._smbus_mod is None:
-            return False
-        try:
-            self._bus.close()
-        except Exception:
-            pass
-        try:
-            time.sleep(0.05)
-            self._bus = self._smbus_mod.SMBus(I2C_BUS)
-            logger.info("MotorController: bus I2C reseteado")
-            return True
-        except Exception as e:
-            logger.error(f"MotorController: no se pudo reabrir el bus I2C ({e})")
-            self._bus = None
-            return False
-
     def _write_speeds(self, speeds: list[int]):
         if speeds == self._last_speeds:
             return
@@ -105,33 +92,28 @@ class MotorController:
             logger.info(f"[SIM] velocidades motores: {speeds}")
             return
 
-        # Respetar intervalo mínimo entre escrituras para no saturar el bus.
-        now = time.monotonic()
-        wait = MIN_WRITE_INTERVAL - (now - self._last_write_t)
-        if wait > 0:
-            time.sleep(wait)
+        # Respetar intervalo mínimo para no pillar al STM32 en su ISR de PID.
+        elapsed = time.monotonic() - self._last_write_t
+        if elapsed < MIN_WRITE_INTERVAL:
+            time.sleep(MIN_WRITE_INTERVAL - elapsed)
 
-        for attempt in range(3):
+        data = _to_bytes(speeds)
+        for attempt, delay in enumerate(_RETRY_DELAYS):
             try:
-                self._bus.write_i2c_block_data(MOTOR_ADDR, MOTOR_FIXED_SPEED_ADDR, speeds)
+                self._bus.write_i2c_block_data(MOTOR_ADDR, MOTOR_FIXED_SPEED_ADDR, data)
                 self._last_write_t = time.monotonic()
                 self._last_speeds = list(speeds)
-                self._consecutive_errors = 0
                 return
             except OSError as e:
                 if e.errno != 121:
-                    logger.error(f"MotorController: error I2C inesperado: {e}")
+                    logger.error(f"MotorController: error I2C ({e})")
                     return
-                self._consecutive_errors += 1
-                if self._consecutive_errors >= 3 and attempt < 2:
-                    # Bus del RP1 probablemente colgado — resetear fd
-                    if not self._reset_bus():
-                        return
-                    time.sleep(0.05)
-                else:
-                    time.sleep(0.015)
+                if attempt < len(_RETRY_DELAYS) - 1:
+                    # El STM32 puede estar en su ISR o con el bus bloqueado.
+                    # Esperar con backoff progresivo para que haga timeout interno.
+                    time.sleep(delay)
 
-        logger.error(f"MotorController: error I2C persistente ({self._consecutive_errors} consecutivos)")
+        logger.error("MotorController: error I2C persistente — comando descartado")
 
     def set_direction(self, direction: str, speed: int):
         vec = DIRECTION_VECTORS.get(direction)
@@ -144,7 +126,6 @@ class MotorController:
     def read_battery_mv(self) -> int | None:
         """Lee el voltaje de batería. Retorna mV o None si I2C no está disponible."""
         if self._bus is None:
-            logger.info("[SIM] lectura de batería no disponible en modo simulación")
             return None
         try:
             data = self._bus.read_i2c_block_data(MOTOR_ADDR, ADC_BAT_ADDR, 2)
