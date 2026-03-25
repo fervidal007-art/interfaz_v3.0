@@ -39,6 +39,7 @@ def _clamp_int8(value: float) -> int:
 class MotorController:
     def __init__(self):
         self._bus = None
+        self._last_speeds: list[int] = [0, 0, 0, 0]  # evita escrituras I2C redundantes
         try:
             try:
                 import smbus2 as smbus
@@ -55,6 +56,12 @@ class MotorController:
             logger.warning(f"MotorController: I2C no disponible, modo simulación ({e})")
 
     def _write_speeds(self, speeds: list[int]):
+        # Solo escribe al bus I2C si el estado cambia (edge-driven, no level-driven).
+        # El STM32 del driver HiWonder maneja el PID internamente a 100 Hz;
+        # el Pi solo necesita actualizar el target cuando hay un cambio real.
+        if speeds == self._last_speeds:
+            return
+        self._last_speeds = list(speeds)
         if self._bus is None:
             logger.info(f"[SIM] velocidades motores: {speeds}")
             return
@@ -92,6 +99,7 @@ class MotorController:
     def close(self):
         if self._bus is not None:
             try:
+                self._last_speeds = [1, 1, 1, 1]  # fuerza la escritura del stop
                 self.stop()
                 self._bus.close()
             except Exception:
