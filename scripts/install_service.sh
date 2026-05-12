@@ -3,6 +3,10 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+FRONTEND_DIR="$ROOT_DIR/frontend"
+BACKEND_DIR="$ROOT_DIR/backend"
+STATE_DIR="$ROOT_DIR/.runtime-state"
+VENV_DIR="$ROOT_DIR/.venv-robomesha"
 SERVICE_TEMPLATE="$ROOT_DIR/systemd/robomesha.service"
 TARGET_SERVICE="/etc/systemd/system/robomesha.service"
 SERVICE_NAME="robomesha.service"
@@ -32,11 +36,105 @@ ensure_cmd() {
   fi
 }
 
+run_as_target_user() {
+  sudo -H -u "$TARGET_USER" env "PATH=$PATH" "$@"
+}
+
 chown_if_exists() {
   local target_path="$1"
   if [[ -e "$target_path" ]]; then
     chown -R "$TARGET_USER:$TARGET_GROUP" "$target_path"
   fi
+}
+
+sha256_file() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  else
+    shasum -a 256 "$1" | awk '{print $1}'
+  fi
+}
+
+needs_refresh() {
+  local manifest="$1"
+  local state_file="$2"
+  local current_hash
+
+  current_hash="$(sha256_file "$manifest")"
+  if [[ ! -f "$state_file" ]] || [[ "$current_hash" != "$(cat "$state_file")" ]]; then
+    printf '%s' "$current_hash" > "$state_file"
+    return 0
+  fi
+
+  return 1
+}
+
+python_module_available() {
+  local module_name="$1"
+  run_as_target_user "$VENV_DIR/bin/python" -c "import $module_name" >/dev/null 2>&1
+}
+
+install_runtime() {
+  local frontend_manifest="$FRONTEND_DIR/package.json"
+  local frontend_lockfile="$FRONTEND_DIR/pnpm-lock.yaml"
+  local backend_requirements="$BACKEND_DIR/requirements.txt"
+  local frontend_install_needed=0
+  local backend_install_needed=0
+
+  mkdir -p "$STATE_DIR"
+  chown -R "$TARGET_USER:$TARGET_GROUP" "$STATE_DIR"
+
+  if [[ ! -d "$FRONTEND_DIR/node_modules" ]]; then
+    frontend_install_needed=1
+  fi
+
+  if [[ ! -d "$VENV_DIR" ]]; then
+    backend_install_needed=1
+  fi
+
+  if [[ -x "$VENV_DIR/bin/python" ]]; then
+    if ! python_module_available uvicorn || ! python_module_available fastapi; then
+      backend_install_needed=1
+    fi
+  fi
+
+  if needs_refresh "$frontend_manifest" "$STATE_DIR/frontend-package.sha256"; then
+    frontend_install_needed=1
+  fi
+
+  if [[ -f "$frontend_lockfile" ]] && needs_refresh "$frontend_lockfile" "$STATE_DIR/frontend-lock.sha256"; then
+    frontend_install_needed=1
+  fi
+
+  if needs_refresh "$backend_requirements" "$STATE_DIR/backend-requirements.sha256"; then
+    backend_install_needed=1
+  fi
+
+  chown -R "$TARGET_USER:$TARGET_GROUP" "$STATE_DIR"
+
+  if (( frontend_install_needed )); then
+    log "Instalando dependencias del frontend"
+    run_as_target_user pnpm --dir "$FRONTEND_DIR" install --frozen-lockfile
+  else
+    log "Frontend sin cambios de dependencias"
+  fi
+
+  if (( backend_install_needed )); then
+    log "Preparando entorno de Python"
+    run_as_target_user python3 -m venv "$VENV_DIR"
+    run_as_target_user "$VENV_DIR/bin/pip" install --upgrade pip
+    run_as_target_user "$VENV_DIR/bin/pip" install -r "$backend_requirements"
+  else
+    log "Backend sin cambios de dependencias"
+  fi
+
+  log "Construyendo frontend en modo build"
+  run_as_target_user pnpm --dir "$FRONTEND_DIR" build
+
+  chown_if_exists "$VENV_DIR"
+  chown_if_exists "$STATE_DIR"
+  chown_if_exists "$FRONTEND_DIR/dist"
+  chown_if_exists "$FRONTEND_DIR/node_modules"
 }
 
 wait_for_health() {
@@ -51,6 +149,8 @@ wait_for_health() {
 }
 
 ensure_cmd curl
+ensure_cmd python3
+ensure_cmd pnpm
 ensure_cmd sudo
 ensure_cmd systemctl
 
@@ -69,10 +169,10 @@ chown_if_exists "$ROOT_DIR/secuencias"
 chmod +x "$ROOT_DIR"/scripts/*.sh
 
 log "Actualizando runtime y generando build"
-sudo -H -u "$TARGET_USER" env "PATH=$PATH" "$ROOT_DIR/scripts/update_runtime.sh"
+install_runtime
 
 log "Instalando hooks de git"
-sudo -H -u "$TARGET_USER" env "PATH=$PATH" "$ROOT_DIR/scripts/install_git_hooks.sh"
+run_as_target_user "$ROOT_DIR/scripts/install_git_hooks.sh"
 
 log "Instalando unidad systemd"
 sed \

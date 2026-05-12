@@ -1,5 +1,39 @@
 # Raspberry Pi deployment
 
+## Configurar punto de acceso Wi-Fi (AP)
+
+Este comando crea y levanta un AP, es decir, un punto de acceso Wi-Fi desde la Raspberry Pi. Sirve para que otros equipos puedan conectarse directamente a la red `RoboMeshA` generada por la Raspberry usando la interfaz `wlan0`.
+
+```bash
+sudo nmcli con add \
+  type wifi \
+  ifname wlan0 \
+  con-name RoboMeshA \
+  autoconnect yes \
+  ssid RoboMeshA \
+  802-11-wireless.mode ap \
+  802-11-wireless.band bg \
+  ipv4.method shared \
+  wifi-sec.key-mgmt wpa-psk \
+  wifi-sec.psk 123456789
+
+sudo nmcli con up RoboMeshA
+```
+
+Parametros principales:
+
+- `type wifi`: crea una conexion Wi-Fi.
+- `ifname wlan0`: usa la interfaz inalambrica de la Raspberry Pi.
+- `con-name RoboMeshA`: guarda la conexion con el nombre `RoboMeshA`.
+- `autoconnect yes`: permite que el AP se active automaticamente al iniciar.
+- `ssid RoboMeshA`: nombre de la red Wi-Fi que veran los clientes.
+- `802-11-wireless.mode ap`: configura la Raspberry como punto de acceso.
+- `802-11-wireless.band bg`: usa la banda de 2.4 GHz.
+- `ipv4.method shared`: comparte red y asigna IP a los clientes conectados.
+- `wifi-sec.key-mgmt wpa-psk`: activa seguridad WPA con clave compartida.
+- `wifi-sec.psk 123456789`: define la contrasena de la red.
+- `sudo nmcli con up RoboMeshA`: levanta la red inmediatamente.
+
 ## Que hace
 
 - Revisa dependencias del frontend y backend.
@@ -30,7 +64,7 @@ La app quedara disponible en `http://<ip-de-la-raspberry>:8000`.
 ## Uso manual
 
 ```bash
-./scripts/update_runtime.sh
+sudo ./scripts/install_service.sh
 ./scripts/start_stack.sh
 ```
 
@@ -38,8 +72,7 @@ La app quedara disponible en `http://<ip-de-la-raspberry>:8000`.
 
 Despues de `git pull`, el hook corre:
 
-- `./scripts/update_runtime.sh`
-- `sudo systemctl restart robomesha.service`
+- `sudo ./scripts/install_service.sh`
 
 Si tu sistema no tiene `sudo` sin password para ese comando, puede pedirte contraseña durante el `git pull`.
 
@@ -61,10 +94,4 @@ sudo ./scripts/uninstall_service.sh
 
 ```bash
 journalctl -u robomesha.service -f
-```
-
-## Healthcheck
-
-```bash
-curl http://127.0.0.1:8000/health
 ```

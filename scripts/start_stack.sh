@@ -8,7 +8,6 @@ VENV_DIR="$ROOT_DIR/.venv-robomesha"
 
 HOST="${HOST:-0.0.0.0}"
 PORT="${PORT:-8000}"
-SKIP_UPDATE="${SKIP_UPDATE:-0}"
 
 log() {
   printf '[stack] %s\n' "$*"
@@ -24,12 +23,13 @@ cleanup() {
 
 trap cleanup EXIT INT TERM
 
-if [[ "$SKIP_UPDATE" != "1" ]]; then
-  "$ROOT_DIR/scripts/update_runtime.sh"
+if [[ ! -x "$VENV_DIR/bin/python" ]]; then
+  log "No existe el entorno virtual en $VENV_DIR. Ejecuta sudo ./scripts/install_service.sh"
+  exit 1
 fi
 
-if [[ ! -x "$VENV_DIR/bin/python" ]]; then
-  log "No existe el entorno virtual en $VENV_DIR. Ejecuta scripts/update_runtime.sh"
+if [[ ! -f "$ROOT_DIR/frontend/dist/index.html" ]]; then
+  log "No existe el build del frontend. Ejecuta sudo ./scripts/install_service.sh"
   exit 1
 fi
 
