@@ -4,7 +4,7 @@ import time
 logger = logging.getLogger(__name__)
 
 # I2C / motor constants (from TankDemo.py)
-I2C_BUS = 0
+I2C_BUS = 1
 MOTOR_ADDR = 0x34
 MOTOR_TYPE_ADDR = 0x14
 MOTOR_ENCODER_POLARITY_ADDR = 0x15
