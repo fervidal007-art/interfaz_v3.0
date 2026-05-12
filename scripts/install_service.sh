@@ -12,6 +12,7 @@ TARGET_SERVICE="/etc/systemd/system/robomesha.service"
 SERVICE_NAME="robomesha.service"
 TARGET_USER="${SUDO_USER:-}"
 HEALTH_URL="http://127.0.0.1:8000/health"
+PNPM_VERSION="${PNPM_VERSION:-9.15.9}"
 
 if [[ "$EUID" -ne 0 ]]; then
   printf 'Este script debe correrse con sudo.\n' >&2
@@ -74,6 +75,10 @@ python_module_available() {
   run_as_target_user "$VENV_DIR/bin/python" -c "import $module_name" >/dev/null 2>&1
 }
 
+pnpm_frontend() {
+  run_as_target_user corepack pnpm@"$PNPM_VERSION" --dir "$FRONTEND_DIR" "$@"
+}
+
 install_runtime() {
   local frontend_manifest="$FRONTEND_DIR/package.json"
   local frontend_lockfile="$FRONTEND_DIR/pnpm-lock.yaml"
@@ -114,7 +119,7 @@ install_runtime() {
 
   if (( frontend_install_needed )); then
     log "Instalando dependencias del frontend"
-    run_as_target_user pnpm --dir "$FRONTEND_DIR" install --frozen-lockfile
+    pnpm_frontend install --frozen-lockfile
   else
     log "Frontend sin cambios de dependencias"
   fi
@@ -129,7 +134,7 @@ install_runtime() {
   fi
 
   log "Construyendo frontend en modo build"
-  run_as_target_user pnpm --dir "$FRONTEND_DIR" build
+  pnpm_frontend build
 
   chown_if_exists "$VENV_DIR"
   chown_if_exists "$STATE_DIR"
@@ -149,8 +154,8 @@ wait_for_health() {
 }
 
 ensure_cmd curl
+ensure_cmd corepack
 ensure_cmd python3
-ensure_cmd pnpm
 ensure_cmd sudo
 ensure_cmd systemctl
 

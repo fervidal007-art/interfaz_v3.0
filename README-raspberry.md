@@ -38,6 +38,7 @@ Parametros principales:
 
 - Revisa dependencias del frontend y backend.
 - Instala solo cuando cambian `package.json`, `pnpm-lock.yaml` o `requirements.txt`.
+- Usa `corepack pnpm@9.15.9` para evitar depender del `pnpm` global del sistema.
 - Reconstruye el frontend en modo `build`.
 - Arranca FastAPI sirviendo tambien el frontend compilado.
 - Instala hooks para que despues de `git pull` se ejecute el refresh automaticamente y se reinicie el servicio.
